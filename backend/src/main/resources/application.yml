@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: backend
+  # 默认启用 local 环境，本地启动即自动带 MySQL/Redis 配置与种子数据。
+  # 部署到其他环境时用 -Dspring.profiles.active=prod 覆盖即可。
+  profiles:
+    active: local
+
+  # 全局 JSON 命名策略：前端契约要求 snake_case（见 docs/后端接口对接说明.md），
+  # 实体/VO 字段直接返回即为 seller_id 这种形式，无需逐个加 @JsonProperty。
+  # 例外：Result / PageResult 中前端已定死的契约字段（pageNum、pageSize 等）
+  # 用 @JsonProperty 显式声明了名字，不受本配置影响。
+  jackson:
+    property-naming-strategy: SNAKE_CASE

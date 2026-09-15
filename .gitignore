@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.env*.local
+
+# ===== 后端（SpringBoot / Maven）=====
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+*.iml
+*.iws
+*.ipr
+.attach_pid*
+HELP.md
+dependency-reduced-pom.xml
+
+# 后端本地私有配置（数据库密码、Redis 密码等，绝不入库）
+application-local.yml
+application-*.local.yml
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===== 工具目录 =====
+.codebuddy/

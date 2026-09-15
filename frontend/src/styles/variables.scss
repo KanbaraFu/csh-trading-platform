@@ -1,0 +1,92 @@
+// ============================================================
+// 设计变量 —— 清新校园风（蓝绿主色 + 橙色强调）
+// ============================================================
+
+// 主色：校园清新蓝绿
+$primary: #14b8a6;
+$primary-dark: #0d9488;
+$primary-darker: #0f766e;
+$primary-light: #5eead4;
+$primary-soft: #ccfbf1;
+$primary-mist: #f0fdfa;
+
+// 强调色：活力橙（价格 / 关键行动）
+$accent: #ff7a45;
+$accent-strong: #ff5000;
+$accent-soft: #fff2e8;
+
+// 功能色
+$success: #22c55e;
+$warning: #f59e0b;
+$danger: #ef4444;
+$info: #3b82f6;
+
+// 中性色
+$bg: #f5f7fa;
+$surface: #ffffff;
+$surface-alt: #fafbfc;
+$border: #eef1f5;
+$text-main: #1f2937;
+$text-sub: #6b7280;
+$text-muted: #9ca3af;
+$text-invert: #ffffff;
+
+// 圆角
+$radius-card: 16px;
+$radius-btn: 10px;
+$radius-pill: 999px;
+
+// 阴影
+$shadow-card: 0 2px 12px rgba(17, 24, 39, 0.06);
+$shadow-hover: 0 14px 32px rgba(13, 148, 136, 0.16);
+$shadow-float: 0 8px 28px rgba(17, 24, 39, 0.1);
+
+// 间距刻度
+$gap-xs: 6px;
+$gap-sm: 10px;
+$gap-md: 16px;
+$gap-lg: 24px;
+$gap-xl: 32px;
+
+// 响应式断点
+$bp-sm: 767.98px; // 移动端上限
+$bp-md: 1023.98px; // 平板上限
+$bp-lg: 1279.98px;
+
+// 布局尺寸
+$nav-height: 64px;
+$tabbar-height: 58px;
+$content-max: 1280px;
+
+// 响应式 mixin
+@mixin mobile {
+  @media (max-width: $bp-sm) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: $bp-sm + 0.02px) and (max-width: $bp-md) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: $bp-md + 0.02px) {
+    @content;
+  }
+}
+
+// 多行文本截断
+@mixin ellipsis($line: 1) {
+  overflow: hidden;
+  @if $line == 1 {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $line;
+    -webkit-box-orient: vertical;
+    line-clamp: $line;
+  }
+}

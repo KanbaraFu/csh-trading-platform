@@ -1,0 +1,278 @@
+@use './variables.scss' as *;
+
+// ============================================================
+// 全局 CSS 变量（供组件直接使用，无需再引入 scss）
+// ============================================================
+:root {
+  --c-primary: #{$primary};
+  --c-primary-dark: #{$primary-dark};
+  --c-primary-soft: #{$primary-soft};
+  --c-primary-mist: #{$primary-mist};
+  --c-accent: #{$accent};
+  --c-accent-strong: #{$accent-strong};
+  --c-accent-soft: #{$accent-soft};
+  --c-success: #{$success};
+  --c-warning: #{$warning};
+  --c-danger: #{$danger};
+  --c-info: #{$info};
+
+  --c-bg: #{$bg};
+  --c-surface: #{$surface};
+  --c-surface-alt: #{$surface-alt};
+  --c-border: #{$border};
+  --c-text: #{$text-main};
+  --c-text-sub: #{$text-sub};
+  --c-text-muted: #{$text-muted};
+
+  --radius-card: #{$radius-card};
+  --radius-btn: #{$radius-btn};
+  --shadow-card: #{$shadow-card};
+  --shadow-hover: #{$shadow-hover};
+  --shadow-float: #{$shadow-float};
+
+  --nav-height: #{$nav-height};
+  --tabbar-height: #{$tabbar-height};
+
+  // ---- Element Plus 主题变量覆盖 ----
+  --el-color-primary: #{$primary};
+  --el-color-primary-light-3: #45c8b8;
+  --el-color-primary-light-5: #7ad9cd;
+  --el-color-primary-light-7: #b0e9e0;
+  --el-color-primary-light-8: #d3f3ee;
+  --el-color-primary-light-9: #edfbf8;
+  --el-color-primary-dark-2: #{$primary-dark};
+  --el-color-success: #{$success};
+  --el-color-warning: #{$warning};
+  --el-color-danger: #{$danger};
+  --el-color-error: #{$danger};
+  --el-color-info: #{$info};
+  --el-border-radius-base: #{$radius-btn};
+  --el-font-family: inherit;
+  --el-text-color-primary: #{$text-main};
+  --el-text-color-regular: #{$text-sub};
+  --el-border-color-lighter: #{$border};
+}
+
+// ============================================================
+// 重置与基础排版
+// ============================================================
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'PingFang SC', 'HarmonyOS Sans SC', 'Noto Sans SC', 'Microsoft YaHei', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6, p, figure {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d5dde5;
+  border-radius: 999px;
+
+  &:hover {
+    background: #bcc8d4;
+  }
+}
+
+// ============================================================
+// 通用布局 / 工具类
+// ============================================================
+.page {
+  width: 100%;
+  max-width: $content-max;
+  margin: 0 auto;
+  padding: $gap-lg $gap-lg $gap-xl;
+}
+
+.card {
+  background: var(--c-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $gap-md;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+
+  .more {
+    font-size: 13px;
+    color: var(--c-text-sub);
+    cursor: pointer;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--c-primary);
+    }
+  }
+}
+
+.price {
+  color: var(--c-accent-strong);
+  font-weight: 700;
+  font-family: 'DIN Alternate', 'PingFang SC', sans-serif;
+}
+
+.price-origin {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  text-decoration: line-through;
+}
+
+.text-sub {
+  color: var(--c-text-sub);
+}
+
+.text-muted {
+  color: var(--c-text-muted);
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+// 网格：PC 四列 / 平板三列 / 手机两列
+.product-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+
+  @include desktop {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
+  }
+}
+
+// 移动端底部固定栏避让
+@include mobile {
+  .page {
+    padding: $gap-md $gap-md calc(#{$tabbar-height} + 24px + env(safe-area-inset-bottom));
+  }
+}
+
+// ============================================================
+// 动效
+// ============================================================
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.fade-up {
+  animation: fade-slide-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #eef1f5 25%, #f7f9fb 37%, #eef1f5 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+// 页面切换过渡
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+}
+
+// Element Plus 细节微调
+.el-card,
+.el-dialog {
+  border-radius: var(--radius-card) !important;
+}
+
+.el-button {
+  font-weight: 500;
+}
+
+.el-message {
+  border-radius: 10px;
+}
