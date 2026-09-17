@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.secondhand.mapper.CommentMapper">
+
+    <resultMap id="BaseResultMap" type="com.campus.secondhand.pojo.Comment">
+            <id property="id" column="id" />
+            <result property="productId" column="product_id" />
+            <result property="userId" column="user_id" />
+            <result property="content" column="content" />
+            <result property="parentId" column="parent_id" />
+            <result property="replyUserId" column="reply_user_id" />
+            <result property="createTime" column="create_time" />
+    </resultMap>
+    <!-- 评论VO结果映射（含用户信息） -->
+    <resultMap id="CommentVoResultMap" type="com.campus.secondhand.vo.CommentVo">
+        <id property="id" column="id" />
+        <result property="productId" column="product_id" />
+        <result property="userId" column="user_id" />
+        <result property="content" column="content" />
+        <result property="parentId" column="parent_id" />
+        <result property="replyUserId" column="reply_user_id" />
+        <result property="createTime" column="create_time" />
+        <result property="nickname" column="nickname" />
+        <result property="avatar" column="avatar" />
+        <result property="replyNickname" column="reply_nickname" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,product_id,user_id,content,parent_id,reply_user_id,
+        create_time
+    </sql>
+
+    <!-- 根据当前id查询顶层评论总数 -->
+    <select id="countTopLevelComments" resultType="java.lang.Long">
+        SELECT count(*)
+        FROM comment
+        WHERE parent_id = 0 AND product_id = #{productId}
+    </select>
+    
+    <!--分页查询顶层评论（带用户信息）-->
+    <select id="selectTopLevelComments" resultMap="CommentVoResultMap">
+        select c.id, c.product_id, c.user_id, c.content, c.parent_id,
+               c.reply_user_id, c.create_time,u.nickname, u.avatar
+        from comment c
+        left join user u on c.user_id=u.id
+        where c.parent_id=0 and c.product_id=#{productId}
+        order by c.create_time desc
+        limit #{offset},#{pageSize}
+    </select>
+
+    <!-- 根据父ID列表批量查询回复（带评论者信息 + 被回复人昵称） -->
+    <select id="selectRepliesByParentIds" resultMap="CommentVoResultMap">
+        SELECT c.id, c.product_id, c.user_id, c.content, c.parent_id,
+        c.reply_user_id, c.create_time,
+        u.nickname, u.avatar,
+        ru.nickname AS reply_nickname
+        FROM comment c
+        LEFT JOIN `user` u ON c.user_id = u.id
+        LEFT JOIN `user` ru ON c.reply_user_id = ru.id
+        WHERE c.parent_id IN
+        <foreach collection="parentIds" item="pid" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+        ORDER BY c.create_time ASC
+    </select>
+</mapper>
