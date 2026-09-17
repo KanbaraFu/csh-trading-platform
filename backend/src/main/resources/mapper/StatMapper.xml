@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.secondhand.mapper.StatMapper">
+
+    <select id="selectOverviewStats" resultType="com.campus.secondhand.vo.OverviewVO">
+        SELECT
+                (SELECT COUNT(*) FROM product)                                 AS product_total,
+                (SELECT COUNT(*) FROM product WHERE status = 1)                AS on_sale_total,
+                (SELECT COUNT(*) FROM user)                                    AS user_total,
+                (SELECT COUNT(*) FROM `order`)                                 AS order_total,
+                (SELECT COUNT(*) FROM favorite)                                AS favorite_total,
+                (SELECT COUNT(*) FROM product WHERE create_time >= CURDATE())  AS today_new_product,
+                (SELECT IFNULL(SUM(pay_amount), 0) FROM `order` WHERE status != 4) AS trade_amount
+    </select>
+</mapper>
