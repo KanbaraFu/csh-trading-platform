@@ -17,8 +17,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // 认证：注册、登录本身当然不需要登录态
         "/api/auth/login",
         "/api/auth/register",
-        // 分类列表：首页要展示
+        // 分类：首页要展示分类列表
         "/api/categories",
+        "/api/categories/*",
+        // 商品：游客也能浏览和搜索商品
+        "/api/products",
+        "/api/products/*",
         // 搜索：游客也能搜索商品
         "/api/search",
         "/api/search/**",
