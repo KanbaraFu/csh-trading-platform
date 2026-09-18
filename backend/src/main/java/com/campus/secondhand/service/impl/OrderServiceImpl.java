@@ -15,7 +15,6 @@ import com.campus.secondhand.pojo.OrderItem;
 import com.campus.secondhand.service.OrderItemService;
 import com.campus.secondhand.service.OrderService;
 import com.campus.secondhand.mapper.OrderMapper;
-import com.campus.secondhand.vo.OrderCountVO;
 import com.campus.secondhand.vo.OrderVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -60,7 +59,7 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
 
         // 获取订单id对应的status值（需要获取每个状态的数量来放进counts里）
 
-        List<Map<String, Long>> results = orderMapper.selectAllStatus();
+        List<Map<String, Long>> results = orderMapper.selectAllStatus(orderQueryDTO,userId);
         Map<String, Long> orderCounts = new HashMap<>();
 
         Long counts = 0L;
@@ -73,9 +72,7 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
 
         orderCounts.put("all", counts);
 
-        OrderCountVO orderCountVO = new OrderCountVO();
-        orderCountVO.setOrderCounts(orderCounts);
-        return PageResult.of(page,orderVOS,orderCountVO);
+        return PageResult.of(page,orderVOS,orderCounts);
     }
 }
 

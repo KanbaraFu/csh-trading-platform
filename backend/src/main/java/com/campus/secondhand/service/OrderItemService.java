@@ -1,7 +1,9 @@
 package com.campus.secondhand.service;
 
 import com.baomidou.mybatisplus.extension.repository.IRepository;
+import com.campus.secondhand.common.Result;
 import com.campus.secondhand.pojo.OrderItem;
+import com.campus.secondhand.vo.OrderVO;
 
 /**
 * @author Lenovo
@@ -9,5 +11,5 @@ import com.campus.secondhand.pojo.OrderItem;
 * @createDate 2026-09-16 11:56:41
 */
 public interface OrderItemService extends IRepository<OrderItem> {
-
+    Result<OrderVO> getOrderDetail(Integer id);
 }

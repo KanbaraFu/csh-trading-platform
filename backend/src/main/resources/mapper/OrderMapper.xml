@@ -75,4 +75,18 @@
         </foreach>
         order by o.create_time desc
     </select>
+
+    <!--查询各个状态订单详情-->
+    <select id="selectAllStatus">
+        SELECT status, COUNT(*) AS `count` FROM `order`
+        <where>
+            <if test="query != null and query.role != null and query.role == 'buyer'">
+                and buyer_id = #{userId}
+            </if>
+            <if test="query != null and query.role != null and query.role == 'seller'">
+                and seller_id = #{userId}
+            </if>
+        </where>
+        GROUP BY status ORDER BY status
+    </select>
 </mapper>

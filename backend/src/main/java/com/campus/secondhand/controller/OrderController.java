@@ -5,8 +5,10 @@ import com.campus.secondhand.common.PageResult;
 import com.campus.secondhand.common.Result;
 import com.campus.secondhand.dto.OrderQueryDTO;
 import com.campus.secondhand.pojo.Order;
+import com.campus.secondhand.pojo.OrderItem;
 import com.campus.secondhand.service.OrderItemService;
 import com.campus.secondhand.service.OrderService;
+import com.campus.secondhand.vo.OrderItemVO;
 import com.campus.secondhand.vo.OrderVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -44,7 +46,6 @@ public class OrderController {
      */
     @GetMapping
     public PageResult<OrderVO> getOrders(@ModelAttribute OrderQueryDTO orderQueryDTO) {
-        System.out.println("orderQueryDTO:"+orderQueryDTO);
         return orderService.getOrders(orderQueryDTO,1L);
     }
 
@@ -54,7 +55,7 @@ public class OrderController {
      * @return 返回对应的订单详情
      */
     @GetMapping("/{id}")
-    public Result<Order> getOrderDetail(@PathVariable Integer id) {
+    public Result<OrderVO> getOrderDetail(@PathVariable Integer id) {
         return null;
     }
 
@@ -78,11 +79,21 @@ public class OrderController {
         return null;
     }
 
+    /**
+     * 确认收货
+     * @param id
+     * @return
+     */
     @PostMapping("/{id}/confirm")
     public Result confirmOrder(@PathVariable Integer id) {
         return null;
     }
 
+    /**
+     * 取消收获
+     * @param id
+     * @return
+     */
     @PostMapping("/{id}/cancel")
     public Result cancelOrder(@PathVariable Integer id) {
         return null;

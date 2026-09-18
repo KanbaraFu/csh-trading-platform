@@ -19,8 +19,6 @@ public class OrderItemVO {
 
     private Long id;                // 商品id
 
-    private Long orderId;           // 对应的订单id
-
     private Long productId;         // 对应的商品id
 
     private String productTitle;    // 对应的商品名

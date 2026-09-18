@@ -1,7 +1,6 @@
 package com.campus.secondhand.common;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.campus.secondhand.vo.OrderCountVO;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -59,7 +58,8 @@ public class PageResult<T> implements Serializable {
     private Long pageSize;
 
     /** 订单页面当前状态，all:全部、0:待付款、1:待发货、2:待收货、3:已完成、4:已取消 */
-    private OrderCountVO orderCounts;
+    @JsonProperty("counts")
+    private Map<String, Long> orderCounts;
 
     public PageResult(List<T> records, Long total, Long pageNum, Long pageSize) {
         this.records = records;
@@ -97,7 +97,7 @@ public class PageResult<T> implements Serializable {
     /**
      * 方法同上方，但这个适用于订单页面当前选择的状态
      */
-    public static <T, S> PageResult<T> of(IPage<S> page, List<T> records, OrderCountVO orderCounts) {
+    public static <T, S> PageResult<T> of(IPage<S> page, List<T> records, Map<String, Long> orderCounts) {
         if (page == null) {
             return empty(Constants.DEFAULT_PAGE_NUM, Constants.DEFAULT_PAGE_SIZE);
         }

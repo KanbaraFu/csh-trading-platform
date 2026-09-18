@@ -1,9 +1,11 @@
 package com.campus.secondhand.service.impl;
 
 import com.baomidou.mybatisplus.spring.repository.CrudRepository;
+import com.campus.secondhand.common.Result;
 import com.campus.secondhand.pojo.OrderItem;
 import com.campus.secondhand.service.OrderItemService;
 import com.campus.secondhand.mapper.OrderItemMapper;
+import com.campus.secondhand.vo.OrderVO;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,6 +17,11 @@ import org.springframework.stereotype.Service;
 public class OrderItemServiceImpl extends CrudRepository<OrderItemMapper, OrderItem>
     implements OrderItemService{
 
+    @Override
+    public Result<OrderVO> getOrderDetail(Integer id) {
+
+        return null;
+    }
 }
 
 

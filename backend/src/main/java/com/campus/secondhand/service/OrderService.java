@@ -6,7 +6,6 @@ import com.campus.secondhand.common.Result;
 import com.campus.secondhand.dto.OrderQueryDTO;
 import com.campus.secondhand.pojo.Order;
 import com.campus.secondhand.vo.OrderVO;
-import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.util.List;
 
