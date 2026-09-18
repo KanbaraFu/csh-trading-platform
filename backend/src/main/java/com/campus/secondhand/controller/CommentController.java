@@ -32,11 +32,13 @@ public class CommentController {
      */
     @PostMapping("/comments")
     //先不从taken取userId
-    public Result createComment(@RequestBody CommentDto commentDto, Long userId) {
-        System.out.println(commentDto);
-//        @RequestHeader(value = Constants.TOKEN_HEADER, required = false)String token)
-// 用户id待获取（token获取）
-//        Long userId = tokenUtil.getUserId(token);
+    public Result createComment(@RequestBody CommentDto commentDto,
+                                @RequestHeader(value = Constants.TOKEN_HEADER, required = false)String token){
+        //Long userId) 测试时用
+        Long userId=tokenUtil.getUserId(token);
+        if (userId == null) {
+            return Result.error(Constants.CODE_UNAUTHORIZED, "请先登录");
+        }
         commentServiceImpl.createComment(commentDto,userId);
         return Result.success();
     }
@@ -54,4 +56,22 @@ public class CommentController {
         PageResult<CommentVo> result=commentServiceImpl.getCommentsByProductId(commentPageDto);
         return Result.success(result);
     }
+
+    /**
+     * 删除评论（只能删自己的，子评论连带删除）
+     * @param id 评论id（路径参数）
+     * @param token 请求头中的token
+     * @return 被删除的评论id
+     */
+    @DeleteMapping("/comments/{id}")
+    public Result deleteComments(@PathVariable Long id,
+                                   @RequestHeader(value = Constants.TOKEN_HEADER, required = false)String token){
+        Long userId = tokenUtil.getUserId(token);
+        if (userId == null) {
+            return Result.error(Constants.CODE_UNAUTHORIZED, "请先登录");
+        }
+            commentServiceImpl.deleteComment(id, userId);
+            return Result.success();
+        }
+
 }

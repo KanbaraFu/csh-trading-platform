@@ -24,6 +24,12 @@ public interface CommentMapper extends BaseMapper<Comment> {
 
     //根据父评论数组查询子评论（带用户信息和被回复用户昵称）
     List<CommentVo> selectRepliesByParentIds(@Param("parentIds") List<Long> parentIds);
+
+
+    /**
+     * 根据父评论id查询所有直接子评论的id
+     */
+    List<Long> selectChildIdsByParentId(@Param("parentId") Long parentId);
 }
 
 

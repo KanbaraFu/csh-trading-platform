@@ -65,4 +65,9 @@
         </foreach>
         ORDER BY c.create_time ASC
     </select>
+
+    <!--查询父id查询相关直接子评论-->
+    <select id="selectChildIdsByParentId" resultType="java.lang.Long">
+        SELECT id FROM comment WHERE parent_id = #{parentId}
+    </select>
 </mapper>

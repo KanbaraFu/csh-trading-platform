@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 分页查询评论接收的参数
+ * 查询：分页查询评论接收的参数
  */
 @Data
 @AllArgsConstructor

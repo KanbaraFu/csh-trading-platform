@@ -22,4 +22,6 @@ public interface CommentService extends IRepository<Comment> {
      * 分页查询商品评论（顶层评论分页，带回复）
      */
     PageResult<CommentVo> getCommentsByProductId(CommentPageDto pageDto);
+
+    void deleteComment(Long commentId, Long userId);
 }
