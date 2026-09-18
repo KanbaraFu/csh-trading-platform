@@ -57,7 +57,7 @@ public class OrderVO {
 
     private String sellerAvatar;        // 卖家地址
 
-    private List<OrderItem> items;      // 订单的每个商品详情
+    private List<OrderItemVO> items;      // 订单的每个商品详情
 
     private int itemCount;              // 该订单的商品个数
 

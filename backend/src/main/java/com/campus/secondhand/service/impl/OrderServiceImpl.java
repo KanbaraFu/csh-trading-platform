@@ -50,9 +50,17 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
 
         // 获取分页后的订单id列表
         IPage<Long> orderIds = orderMapper.selectOrderIdsByPage(page, orderQueryDTO,userId);
+        if (orderIds == null) {
+            String message = "订单id获取失败!";
+            throw BizException.notFound(message);
+        }
 
         // 通过订单ids查询订单列表及其订单详情
         List<OrderVO> orderVOS = orderMapper.selectOrderListByOrderIds(orderIds.getRecords());
+        if (orderVOS == null) {
+            String message = "订单列表获取失败!";
+            throw BizException.notFound(message);
+        }
 
         // 获取订单中的商品数量，并将其设置在vo对象上的itemCount上
         orderVOS.forEach((orderVO) -> orderVO.setItemCount(orderVO.getItems().size()));
@@ -60,6 +68,11 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         // 获取订单id对应的status值（需要获取每个状态的数量来放进counts里）
 
         List<Map<String, Long>> results = orderMapper.selectAllStatus(orderQueryDTO,userId);
+        if (results == null) {
+            String message = "状态筛选获取失败！";
+            throw BizException.notFound(message);
+        }
+
         Map<String, Long> orderCounts = new HashMap<>();
 
         Long counts = 0L;

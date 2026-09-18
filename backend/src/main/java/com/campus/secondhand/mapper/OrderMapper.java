@@ -26,7 +26,6 @@ public interface OrderMapper extends BaseMapper<Order> {
     List<OrderVO> selectOrderListByOrderIds(List<Long> orderIds);
 
     // 查询各个状态订单详情
-    @Select("SELECT status, COUNT(*) AS `count` FROM `order` GROUP BY status ORDER BY status")
     List<Map<String,Long>> selectAllStatus(@Param("query") OrderQueryDTO orderQueryDTO, @Param("userId") Long userId);
 }
 
