@@ -4,19 +4,22 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.campus.secondhand.mapper.OrderItemMapper">
 
-    <resultMap id="OrderItemMap" type="com.campus.secondhand.pojo.OrderItem">
-            <id property="id" column="id" />
-            <result property="orderId" column="order_id" />
-            <result property="productId" column="product_id" />
-            <result property="productTitle" column="product_title" />
-            <result property="productCover" column="product_cover" />
-            <result property="price" column="price" />
-            <result property="quantity" column="quantity" />
-            <result property="totalAmount" column="total_amount" />
-    </resultMap>
-
-    <sql id="Base_Column_List">
-        id,order_id,product_id,product_title,product_cover,price,
-        quantity,total_amount
-    </sql>
+    <select id="selectOrderItemById" resultMap="OrderBaseMapper.OrderVOMap">
+        select
+            <include refid="OrderBaseMapper.Order_Column_List" />,
+            t1.nickname as buyer_nickname,
+            t1.avatar as buyer_avatar,
+            t2.nickname as seller_nickname,
+            t2.avatar as seller_avatar,
+            <include refid="OrderBaseMapper.OrderItem_Column_List" />
+        from `order` o
+        inner join (select id, nickname, avatar from `user`) t1
+                    on o.buyer_id = t1.id
+        inner join (select id, nickname, avatar from `user`) t2
+                    on o.seller_id = t2.id
+        inner join `order_item` oi
+                    on o.id = oi.order_id
+        where o.id = #{orderId}
+        order by o.create_time desc;
+    </select>
 </mapper>

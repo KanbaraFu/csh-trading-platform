@@ -46,17 +46,19 @@ public class OrderController {
      */
     @GetMapping
     public PageResult<OrderVO> getOrders(@ModelAttribute OrderQueryDTO orderQueryDTO) {
+        // TODO 获取Token，需要等待用户模块的完成
         return orderService.getOrders(orderQueryDTO,1L);
     }
 
     /**
      * 获取订单详情（仅买卖双方可见）
-     * @param id 对应的订单详情id
+     * @param orderId 对应的订单详情id
      * @return 返回对应的订单详情
      */
     @GetMapping("/{id}")
-    public Result<OrderVO> getOrderDetail(@PathVariable Integer id) {
-        return null;
+    public Result<OrderVO> getOrderDetail(@PathVariable("id") Long orderId) {
+        // TODO 获取Token，需要等待用户模块的完成
+        return orderItemService.getOrderDetail(orderId, 1L);
     }
 
     /**

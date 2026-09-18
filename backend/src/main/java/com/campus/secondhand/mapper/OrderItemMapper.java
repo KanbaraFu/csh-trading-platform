@@ -2,6 +2,8 @@ package com.campus.secondhand.mapper;
 
 import com.campus.secondhand.pojo.OrderItem;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.campus.secondhand.vo.OrderVO;
+import org.apache.ibatis.annotations.Param;
 
 /**
 * @author Lenovo
@@ -10,7 +12,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @Entity com.campus.secondhand.pojo.OrderItem
 */
 public interface OrderItemMapper extends BaseMapper<OrderItem> {
-
+    OrderVO selectOrderItemById(@Param("orderId") Long orderId);
 }
 
 
