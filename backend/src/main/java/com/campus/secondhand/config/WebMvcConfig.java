@@ -14,17 +14,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
      * 登录拦截器的放行白名单：不需要登录就能访问的接口。
      */
     public static final String[] LOGIN_EXCLUDE_PATTERNS = {
-        // 认证：注册、登录本身当然不需要登录态
-        "/api/auth/login",
-        "/api/auth/register",
-        // 分类列表：首页要展示
-        "/api/categories",
-        // 搜索：游客也能搜索商品
-        "/api/search",
-        "/api/search/**",
-        // 统计：热门榜、浏览量上报不要求登录
-        "/api/stat/hot-products",
-        "/api/stat/view/**"
+            "/api/user/login",
+            "/api/user/register",
+            "/api/user/code",
+            "/api/categories",
+            "/api/search",
+            "/api/search/**",
+            "/api/stat/hot-products",
+            "/api/stat/view/**"
     };
 
     @Override

@@ -41,29 +41,37 @@ public class Result<T> implements Serializable {
     /* ==================== 成功 ==================== */
 
     public static <T> Result<T> success() {
-        return new Result<>(Constants.CODE_SUCCESS, Constants.MSG_SUCCESS, null);
+        return success(null);
     }
 
     public static <T> Result<T> success(T data) {
-        return new Result<>(Constants.CODE_SUCCESS, Constants.MSG_SUCCESS, data);
+        Result<T> vo = new Result<>();
+        vo.setCode(200);
+        vo.setMessage("操作成功");
+        vo.setData(data);
+        return vo;
     }
 
-    public static <T> Result<T> success(String message, T data) {
-        return new Result<>(Constants.CODE_SUCCESS, message, data);
-    }
 
     /* ==================== 失败 ==================== */
 
-    public static <T> Result<T> error() {
-        return new Result<>(Constants.CODE_ERROR, Constants.MSG_ERROR, null);
+    public static <T> Result<T> fail(Integer code, String msg) {
+        Result<T> vo = new Result<>();
+        vo.setCode(code);
+        vo.setMessage(msg);
+        return vo;
     }
 
-    public static <T> Result<T> error(String message) {
-        return new Result<>(Constants.CODE_ERROR, message, null);
+    public static Result<Void> error(Integer code, String message) {
+        return null;
     }
 
-    public static <T> Result<T> error(Integer code, String message) {
-        return new Result<>(code, message, null);
+    public static Result<Void> error() {
+        return null;
+    }
+
+    public static Result<Void> error(String s) {
+        return null;
     }
 
     /**

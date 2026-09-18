@@ -254,10 +254,10 @@ function forgotPassword() {
             {{ loading ? '正在登录…' : '登录' }}
           </button>
 
-          <button class="demo-btn" type="button" @click="fillDemo">
-            <el-icon :size="14"><MagicStick /></el-icon>
-            一键填入演示账号
-          </button>
+<!--          <button class="demo-btn" type="button" @click="fillDemo">-->
+<!--            <el-icon :size="14"><MagicStick /></el-icon>-->
+<!--            一键填入演示账号-->
+<!--          </button>-->
         </el-form>
 
         <!-- 注册表单 -->
@@ -557,7 +557,7 @@ function forgotPassword() {
   cursor: not-allowed;
 }
 
-.demo-btn {
+/*.demo-btn {
   width: 100%;
   height: 42px;
   margin-top: 12px;
@@ -572,7 +572,7 @@ function forgotPassword() {
   font-size: 13px;
   cursor: pointer;
   transition: background 0.2s;
-}
+}*/
 
 .demo-btn:hover {
   background: #e3fbf5;
