@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.secondhand.mapper.OrderItemMapper">
+
+    <resultMap id="OrderItemMap" type="com.campus.secondhand.pojo.OrderItem">
+            <id property="id" column="id" />
+            <result property="orderId" column="order_id" />
+            <result property="productId" column="product_id" />
+            <result property="productTitle" column="product_title" />
+            <result property="productCover" column="product_cover" />
+            <result property="price" column="price" />
+            <result property="quantity" column="quantity" />
+            <result property="totalAmount" column="total_amount" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,order_id,product_id,product_title,product_cover,price,
+        quantity,total_amount
+    </sql>
+</mapper>

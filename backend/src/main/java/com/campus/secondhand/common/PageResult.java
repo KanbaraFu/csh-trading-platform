@@ -1,6 +1,7 @@
 package com.campus.secondhand.common;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.campus.secondhand.vo.OrderCountVO;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 分页返回结构，作为 {@link Result#getData()} 的载体。
@@ -56,6 +58,16 @@ public class PageResult<T> implements Serializable {
     @JsonProperty("pageSize")
     private Long pageSize;
 
+    /** 订单页面当前状态，all:全部、0:待付款、1:待发货、2:待收货、3:已完成、4:已取消 */
+    private OrderCountVO orderCounts;
+
+    public PageResult(List<T> records, Long total, Long pageNum, Long pageSize) {
+        this.records = records;
+        this.total = total;
+        this.pageNum = pageNum;
+        this.pageSize = pageSize;
+    }
+
     /**
      * 直接由 MyBatis-Plus 的 {@link IPage} 转换。
      */
@@ -69,7 +81,7 @@ public class PageResult<T> implements Serializable {
 
     /**
      * 由 {@link IPage} 的分页信息 + 转换后的列表组装。
-     * 适用于 Entity 分页后需要转成 VO 的场景。
+     * 适用于 Pojo 分页后需要转成 VO 的场景。
      */
     public static <T, S> PageResult<T> of(IPage<S> page, List<T> records) {
         if (page == null) {
@@ -80,6 +92,21 @@ public class PageResult<T> implements Serializable {
                 page.getTotal(),
                 page.getCurrent(),
                 page.getSize());
+    }
+
+    /**
+     * 方法同上方，但这个适用于订单页面当前选择的状态
+     */
+    public static <T, S> PageResult<T> of(IPage<S> page, List<T> records, OrderCountVO orderCounts) {
+        if (page == null) {
+            return empty(Constants.DEFAULT_PAGE_NUM, Constants.DEFAULT_PAGE_SIZE);
+        }
+        return new PageResult<>(
+                records == null ? Collections.emptyList() : records,
+                page.getTotal(),
+                page.getCurrent(),
+                page.getSize(),
+                orderCounts);
     }
 
     public static <T> PageResult<T> of(List<T> records, long total, long pageNum, long pageSize) {
