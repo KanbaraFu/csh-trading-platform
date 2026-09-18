@@ -34,9 +34,9 @@ public class FavoriteController {
 
     /**
      * 收藏
-     * @param productId
-     * @param token
-     * @return
+     * @param productId 商品id
+     * @param token token
+     * @return 收藏/取消收藏接口返回视图对象
      */
     @PostMapping("/{productId}")
     public Result<FavoriteToggleVO> add(
@@ -50,9 +50,9 @@ public class FavoriteController {
 
     /**
      * 取消收藏
-     * @param productId
-     * @param token
-     * @return
+     * @param productId 商品id
+     * @param token token
+     * @return 收藏/取消收藏接口返回视图对象
      */
     @DeleteMapping("/{productId}")
     public Result<FavoriteToggleVO> remove(
@@ -65,10 +65,10 @@ public class FavoriteController {
 
     /**
      * 查询我的收藏分页列表
-     * @param pageNum
-     * @param pageSize
-     * @param token
-     * @return
+     * @param pageNum  页码
+     * @param pageSize 每页多少个
+     * @param token token
+     * @return  返回前端页码视图
      */
     @GetMapping
     public Result<FavoritePageVO> list(
@@ -83,8 +83,8 @@ public class FavoriteController {
 
     /**
      * 获取全部收藏列表
-     * @param token
-     * @return
+     * @param token token
+     * @return 收藏列表
      */
     @GetMapping("/ids")
     public Result<List<Long>> ids(
