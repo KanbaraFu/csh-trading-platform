@@ -7,10 +7,7 @@ import com.campus.secondhand.service.UserService;
 import com.campus.secondhand.vo.LoginVO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user")
@@ -39,5 +36,26 @@ public class UserController {
         return Result.success();
     }
 
+    /**
+     * 验证码
+     * @param phone
+     * @return
+     */
+    @GetMapping("/code")
+    public Result<String> sendCode(@RequestParam("phone") String phone) {
+        String code = userService.sendCode(phone);
+        return Result.success(code);
+    }
+
+    /**
+     * 退出登录
+     * @param token
+     * @return
+     */
+    @PostMapping("/logout")
+    public Result<Void> logout(@RequestHeader(value = "Authorization", required = false) String token) {
+        userService.logout(token);
+        return Result.success();
+    }
 
 }

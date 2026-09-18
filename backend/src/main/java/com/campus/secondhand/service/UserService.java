@@ -19,6 +19,12 @@ public interface UserService extends IRepository<User> {
     LoginVO login(LoginDTO loginDTO);
 
     /*注册*/
-    void register(@Valid RegisterDTO registerDTO);
+    void register(RegisterDTO registerDTO);
+
+    /*验证码*/
+    String sendCode(String phone);
+
+    /*退出登录*/
+    void logout(String token); // 当前请求头中的token
 
 }
