@@ -1,10 +1,8 @@
 package com.campus.secondhand.service;
 
-import com.campus.secondhand.vo.HotWordVO;
-import com.campus.secondhand.vo.OverviewVO;
-import com.campus.secondhand.vo.ProductVO;
-import com.campus.secondhand.vo.SearchResultVO;
+import com.campus.secondhand.vo.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface SearchService {
@@ -14,12 +12,17 @@ public interface SearchService {
      * @param pageNum
      * @param pageSize
      * @param sort
+     * @param minPrice
+     * @param maxPrice
      * @return
      */
     SearchResultVO searchByKeyword(String keyword,
                                    Long pageNum,
                                    Long pageSize,
-                                   String sort);
+                                   String sort,
+                                   BigDecimal minPrice,
+                                   BigDecimal maxPrice);
+
 
     /**
      *
@@ -39,4 +42,18 @@ public interface SearchService {
      * @return
      */
     OverviewVO getOverview();
+
+    /**
+     *
+     * @param productId
+     * @return
+     */
+    RecordViewVO getRecordView(Long productId);
+
+    /**
+     *
+     * @param productId
+     * @return
+     */
+    SalesVO getSalesInfo(Long productId);
 }

@@ -4,6 +4,7 @@ import com.campus.secondhand.pojo.Product;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -14,11 +15,21 @@ import java.util.List;
 */
 public interface ProductMapper extends BaseMapper<Product> {
     /**
-     * 根据关键词模糊查询商品
-     * @param keyword
-     * @return
+     * 按关键词 + 价格区间 + 排序 + 分页查在售商品
      */
-    List<Product> selectByTitleProduct(@Param("keyword") String keyword);
+    List<Product> selectByKeyword(@Param("keyword") String keyword,
+                                  @Param("minPrice") BigDecimal minPrice,
+                                  @Param("maxPrice") BigDecimal maxPrice,
+                                  @Param("sort") String sort,
+                                  @Param("offset") long offset,
+                                  @Param("pageSize") long pageSize);
+
+    /**
+     * 同样条件下的总数（分页 total 用）
+     */
+    Long countByKeyword(@Param("keyword") String keyword,
+                        @Param("minPrice") BigDecimal minPrice,
+                        @Param("maxPrice") BigDecimal maxPrice);
 
     /**
      * 分页查询商品
@@ -27,6 +38,20 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @return
      */
     List<Product> selectHotProducts(@Param("limit") int limit);
+
+    /**
+     *
+     * @param productId
+     * @return
+     */
+    int updateRecordView(@Param("productId") Long productId);
+
+    /**
+     *
+     * @param productId
+     * @return
+     */
+    Product selectById(@Param("productId")Long productId);
 }
 
 

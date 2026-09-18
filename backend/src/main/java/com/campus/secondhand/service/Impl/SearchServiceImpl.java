@@ -7,18 +7,15 @@ import com.campus.secondhand.pojo.Product;
 import com.campus.secondhand.pojo.User;
 import com.campus.secondhand.service.SearchService;
 import com.campus.secondhand.utils.RedisUtil;
-import com.campus.secondhand.vo.HotWordVO;
-import com.campus.secondhand.vo.OverviewVO;
-import com.campus.secondhand.vo.ProductVO;
-import com.campus.secondhand.vo.SearchResultVO;
+import com.campus.secondhand.utils.Validate;
+import com.campus.secondhand.vo.*;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.math.BigDecimal;
+import java.util.*;
 
 @Service
 public class SearchServiceImpl implements SearchService {
@@ -41,13 +38,17 @@ public class SearchServiceImpl implements SearchService {
      * @param pageNum
      * @param pageSize
      * @param sort
+     * @param minPrice
+     * @param maxPrice
      * @return
      */
     @Override
     public SearchResultVO searchByKeyword(String keyword,
                                           Long pageNum,
                                           Long pageSize,
-                                          String sort) {
+                                          String sort,
+                                          BigDecimal minPrice,
+                                          BigDecimal maxPrice) {
         // 搜索词计入热词榜（Redis 不可用时忽略，不影响搜索）
         try {
             if (keyword != null && !keyword.isBlank()) {
@@ -55,29 +56,37 @@ public class SearchServiceImpl implements SearchService {
             }
         } catch (Exception ignored) {
         }
-        List<ProductVO> productVOList=new ArrayList<>();
-        //根据搜索词查询商品
-        List<Product> products = productMapper.selectByTitleProduct(keyword);
-        for(Product product:products){
-            //根据该商品id查询对应的商品图片
+        // 参数兜底
+        long pn = (pageNum == null || pageNum < 1) ? 1 : pageNum;
+        long ps = (pageSize == null || pageSize < 1) ? 12 : pageSize;
+        String st = (sort == null || sort.isBlank()) ? "new" : sort;
+
+        // 总数（分页 total）
+        Long total = productMapper.countByKeyword(keyword, minPrice, maxPrice);
+
+        // 当前页商品（关键词 + 价格 + 排序 + 分页，一条 SQL）
+        List<Product> products = productMapper.selectByKeyword(
+                keyword, minPrice, maxPrice, st, (pn - 1) * ps, ps);
+
+        // 装饰：图片/卖家/分类
+        List<ProductVO> productVOList = new ArrayList<>();
+        for (Product product : products) {
             List<String> images = productImageMapper.selectImageByPid(product.getId());
-            //通过商品对应的卖家id查询卖家信息
             User seller = userMapper.selectUserById(product.getSellerId());
-            //根据商品对应的分类id查询分类信息
             Category category = categoryMapper.selectCategoryById(product.getCategoryId());
-            //将查到的信息封装为json数据响应给前端
-            productVOList.add(
-                    ProductVO.setProductVO(product,images,seller,category)
-            );
+            productVOList.add(ProductVO.setProductVO(product, images, seller, category));
         }
-        SearchResultVO searchResultVO=new SearchResultVO();
+
+        // 4. 封装分页结果
+        SearchResultVO searchResultVO = new SearchResultVO();
         searchResultVO.setKeyword(keyword);
-        searchResultVO.setTotal((long)productVOList.size());
+        searchResultVO.setTotal(total);
         searchResultVO.setRecords(productVOList);
-        searchResultVO.setPageNum(pageNum);
-        searchResultVO.setPageSize(pageSize);
+        searchResultVO.setPageNum(pn);
+        searchResultVO.setPageSize(ps);
         return searchResultVO;
     }
+
 
     /**
      *
@@ -108,7 +117,7 @@ public class SearchServiceImpl implements SearchService {
             vo.setScore(tuple.getScore());
             vo.setRank(rank);
             vo.setPercent((int) Math.round(tuple.getScore() / max * 100));
-            vo.setIs_hot(rank <= 3L);
+            vo.setIsHot(rank <= 3L);
             list.add(vo);
             rank++;
         }
@@ -165,6 +174,43 @@ public class SearchServiceImpl implements SearchService {
             vo.setHotKeywordTotal(0L);
         }
         return vo;
+    }
+
+    /**
+     *
+     * @param productId
+     * @return
+     */
+    @Override
+    @Transactional
+    public RecordViewVO getRecordView(Long productId) {
+        //查询商品并验证是否存在
+        Product product = productMapper.selectById(productId);
+        Validate.notFound(product == null,"该商品记录不存在");
+        //更新商品浏览次数+1
+        int row = productMapper.updateRecordView(productId);
+        Validate.verify(row != 1,"浏览记录更新失败");
+        //如果能执行到这一步，说明浏览次数+1正常执行，不用再查一次，直接设置其浏览次数+1返回就行
+        RecordViewVO recordViewVO=new RecordViewVO();
+        recordViewVO.setProductId(productId);
+        recordViewVO.setViewCount(product.getViewCount()+1);
+        return recordViewVO;
+    }
+
+    /**
+     *
+     * @param productId
+     * @return
+     */
+    @Override
+    public SalesVO getSalesInfo(Long productId) {
+        Product product = productMapper.selectById(productId);
+        Validate.notFound(product == null,"该商品记录不存在");
+        SalesVO salesVO=new SalesVO();
+        salesVO.setProductId(productId);
+        salesVO.setSalesCount(product.getSalesCount());
+        salesVO.setViewCount(product.getViewCount());
+        return salesVO;
     }
 
     /**

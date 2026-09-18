@@ -8,5 +8,5 @@ public class HotWordVO {
     private Double score;
     private Long rank;
     private Integer percent;
-    private Boolean is_hot;
+    private Boolean isHot;
 }

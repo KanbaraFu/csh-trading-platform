@@ -2,16 +2,12 @@ package com.campus.secondhand.controller;
 
 import com.campus.secondhand.common.Result;
 import com.campus.secondhand.service.SearchService;
-import com.campus.secondhand.vo.HotWordVO;
-import com.campus.secondhand.vo.OverviewVO;
-import com.campus.secondhand.vo.ProductVO;
-import com.campus.secondhand.vo.SearchResultVO;
+import com.campus.secondhand.vo.*;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 @RequestMapping("/api")
 @RestController
@@ -30,13 +26,14 @@ public class SearchController {
      */
     @GetMapping("/search")
     public Result<SearchResultVO> search(
-            @RequestParam(required = false)String keyword,
-            @RequestParam(required = false,defaultValue = "1")Long pageNum,
-            @RequestParam(required = false,defaultValue = "12")Long pageSize,
-            @RequestParam(required = false,defaultValue = "sort")String sort
-    ){
-        //根据关键词keyword查询商品信息
-        SearchResultVO searchResultVO=searchService.searchByKeyword(keyword,pageNum,pageSize,sort);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "1") Long pageNum,
+            @RequestParam(required = false, defaultValue = "12") Long pageSize,
+            @RequestParam(required = false, defaultValue = "new") String sort,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice
+    ) {
+        SearchResultVO searchResultVO = searchService.searchByKeyword(keyword, pageNum, pageSize, sort, minPrice, maxPrice);
         return Result.success(searchResultVO);
     }
 
@@ -75,4 +72,25 @@ public class SearchController {
         return Result.success(searchService.getOverview());
     }
 
+    /**
+     * 记录商品浏览量
+     * @param productId
+     * @return
+     */
+    @PostMapping("/stat/view/{productId}")
+    public Result<RecordViewVO> recordView(@PathVariable Long productId){
+        RecordViewVO recordViewVO = searchService.getRecordView(productId);
+        return Result.success(recordViewVO);
+    }
+
+    /**
+     *
+     * @param productId
+     * @return
+     */
+    @GetMapping("/stat/sales/{productId}")
+    public Result<SalesVO> getSales(@PathVariable Long productId){
+        SalesVO salesInfo = searchService.getSalesInfo(productId);
+        return Result.success(salesInfo);
+    }
 }

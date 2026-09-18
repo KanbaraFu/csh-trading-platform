@@ -40,4 +40,49 @@
         order by view_count desc
         limit #{limit}
     </select>
+    <update id="updateRecordView">
+        update product
+        set view_count=view_count+1
+        where
+        id=#{productId}
+    </update>
+    <select id="selectById" resultType="com.campus.secondhand.pojo.Product">
+        select <include refid="Base_Column_List"/>
+        from product
+        where
+        id=#{productId}
+    </select>
+    <!-- 关键词 + 价格 通用过滤条件（status 排除下架） -->
+    <sql id="Keyword_Filter">
+        <where>
+            status != 0
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE concat('%', #{keyword}, '%')
+                OR description LIKE concat('%', #{keyword}, '%'))
+            </if>
+            <if test="minPrice != null">
+                AND price &gt;= #{minPrice}
+            </if>
+            <if test="maxPrice != null">
+                AND price &lt;= #{maxPrice}
+            </if>
+        </where>
+    </sql>
+
+    <select id="countByKeyword" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM product
+        <include refid="Keyword_Filter"/>
+    </select>
+
+    <select id="selectByKeyword" resultType="com.campus.secondhand.pojo.Product">
+        SELECT <include refid="Base_Column_List"/> FROM product
+        <include refid="Keyword_Filter"/>
+        <choose>
+            <when test="sort == 'hot'">ORDER BY (view_count + sales_count * 10) DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY price ASC</when>
+            <when test="sort == 'price_desc'">ORDER BY price DESC</when>
+            <otherwise>ORDER BY create_time DESC</otherwise>
+        </choose>
+        LIMIT #{offset}, #{pageSize}
+    </select>
 </mapper>
