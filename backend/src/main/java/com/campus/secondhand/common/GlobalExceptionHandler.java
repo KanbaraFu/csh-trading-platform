@@ -101,7 +101,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
         log.error("系统异常", e);
-        return Result.error();
+        return Result.error("系统异常！");
     }
 
     /**
