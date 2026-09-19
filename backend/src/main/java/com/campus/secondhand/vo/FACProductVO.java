@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ProductVO extends Product {
+public class FACProductVO extends Product {
 
     /**
      * 序列化版本号

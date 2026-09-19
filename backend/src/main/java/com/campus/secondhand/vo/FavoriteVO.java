@@ -32,5 +32,5 @@ public class FavoriteVO implements Serializable {
     /**
      * 商品详情VO，封装商品完整展示信息
      */
-    private ProductVO product;
+    private FACProductVO product;
 }

@@ -10,7 +10,7 @@ import com.campus.secondhand.pojo.Category;
 import com.campus.secondhand.pojo.Product;
 import com.campus.secondhand.pojo.ProductImage;
 import com.campus.secondhand.pojo.User;
-import com.campus.secondhand.vo.ProductVO;
+import com.campus.secondhand.vo.FACProductVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
@@ -66,7 +66,7 @@ public class ProductDecorator {
      * @param productId 商品 id
      * @return 装饰后的 ProductVO；如果商品不存在返回 null
      */
-    public ProductVO decorate(Long productId) {
+    public FACProductVO decorate(Long productId) {
         // 防御：id 为空直接返回，避免查库报错
         if (productId == null) {
             return null;
@@ -77,7 +77,7 @@ public class ProductDecorator {
             return null;
         }
         // 复用下面的批量组装逻辑（只传一个商品的列表），保证单个/批量装饰规则完全一致
-        List<ProductVO> list = assemble(Collections.singletonList(product));
+        List<FACProductVO> list = assemble(Collections.singletonList(product));
         return list.isEmpty() ? null : list.get(0);
     }
 
@@ -91,7 +91,7 @@ public class ProductDecorator {
      * @param productIds 一批商品 id
      * @return 装饰后的 ProductVO 列表（调用方可自己转成 Map<id, VO> 方便取用）
      */
-    public List<ProductVO> decorateBatch(Collection<Long> productIds) {
+    public List<FACProductVO> decorateBatch(Collection<Long> productIds) {
         // 防御：入参为空直接返回空列表
         if (productIds == null || productIds.isEmpty()) {
             return Collections.emptyList();
@@ -112,7 +112,7 @@ public class ProductDecorator {
      * 核心组装方法：把一批 Product 加工成一批 ProductVO。
      * 思路是“先批量把关联数据查成 Map，再在内存里逐个拼装”，全程只查 4 次库。
      */
-    private List<ProductVO> assemble(List<Product> products) {
+    private List<FACProductVO> assemble(List<Product> products) {
         if (products.isEmpty()) {
             return Collections.emptyList();
         }
@@ -147,9 +147,9 @@ public class ProductDecorator {
         ));
 
         // ---- 第 5 步：逐个商品拼装 ProductVO ----
-        List<ProductVO> result = new ArrayList<>(products.size());
+        List<FACProductVO> result = new ArrayList<>(products.size());
         for (Product p : products) {
-            ProductVO vo = new ProductVO();
+            FACProductVO vo = new FACProductVO();
             // 把 Product 里所有同名字段（id/title/price/status...）一次性拷到 vo，省去手写一堆 setter
             BeanUtils.copyProperties(p, vo);
 
