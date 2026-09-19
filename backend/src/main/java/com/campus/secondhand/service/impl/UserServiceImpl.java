@@ -1,4 +1,4 @@
-package com.campus.secondhand.service.impl;
+package com.campus.secondhand.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.repository.CrudRepository;
@@ -16,6 +16,8 @@ import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -127,8 +129,8 @@ public class UserServiceImpl extends CrudRepository<UserMapper, User>
         user.setPassword(PasswordUtil.encrypt(password));
         user.setNickname("用户" + phone.substring(phone.length() - 4));
         user.setStatus(1);
-        user.setCreateTime(new Date());
-        user.setUpdateTime(new Date());
+        user.setCreateTime(LocalDateTime.now());
+        user.setUpdateTime(LocalDateTime.now());
 
         int rows = userMapper.insert(user);
         System.out.println("插入影响行数：" + rows);
