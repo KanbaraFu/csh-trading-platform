@@ -9,7 +9,10 @@ import org.apache.ibatis.annotations.Mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
-@Mapper
+import java.math.BigDecimal;
+import java.util.List;
+
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -19,6 +22,7 @@ import java.util.List;
 * @createDate 2026-09-16 17:21:50
 * @Entity com.campus.secondhand.pojo.Product
 */
+@Mapper
 public interface ProductMapper extends BaseMapper<Product> {
     /**
      * 按关键词 + 价格区间 + 排序 + 分页查在售商品
