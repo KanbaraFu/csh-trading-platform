@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ProductVO extends Product {
+public class ProductViewVO extends Product {
 
     /** 商品图片列表（按 sort 升序），为空时回退为 [cover] */
     private List<String> images;
@@ -50,8 +50,8 @@ public class ProductVO extends Product {
      * 由商品实体 + 关联数据组装。关联数据批量查询后在 Service 层传入，
      * 避免逐条 N+1 查询。
      */
-    public static ProductVO setProductVO(Product product, List<String> images, User seller, Category category) {
-        ProductVO vo = new ProductVO();
+    public static ProductViewVO setProductViewVO(Product product, List<String> images, User seller, Category category) {
+        ProductViewVO vo = new ProductViewVO();
         vo.setId(product.getId());
         vo.setSellerId(product.getSellerId());
         vo.setCategoryId(product.getCategoryId());

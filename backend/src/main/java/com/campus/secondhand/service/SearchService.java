@@ -35,7 +35,7 @@ public interface SearchService {
      * @param limit
      * @return
      */
-    List<ProductVO> getHotProducts(Long limit);
+    List<ProductViewVO> getHotProducts(Long limit);
 
     /**
      *

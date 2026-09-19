@@ -69,19 +69,19 @@ public class SearchServiceImpl implements SearchService {
                 keyword, minPrice, maxPrice, st, (pn - 1) * ps, ps);
 
         // 装饰：图片/卖家/分类
-        List<ProductVO> productVOList = new ArrayList<>();
+        List<ProductViewVO> productViewVOList = new ArrayList<>();
         for (Product product : products) {
             List<String> images = productImageMapper.selectImageByPid(product.getId());
             User seller = userMapper.selectUserById(product.getSellerId());
             Category category = categoryMapper.selectCategoryById(product.getCategoryId());
-            productVOList.add(ProductVO.setProductVO(product, images, seller, category));
+            productViewVOList.add(ProductViewVO.setProductViewVO(product, images, seller, category));
         }
 
         // 4. 封装分页结果
         SearchResultVO searchResultVO = new SearchResultVO();
         searchResultVO.setKeyword(keyword);
         searchResultVO.setTotal(total);
-        searchResultVO.setRecords(productVOList);
+        searchResultVO.setRecords(productViewVOList);
         searchResultVO.setPageNum(pn);
         searchResultVO.setPageSize(ps);
         return searchResultVO;
@@ -130,11 +130,11 @@ public class SearchServiceImpl implements SearchService {
      * @return
      */
     @Override
-    public List<ProductVO> getHotProducts(Long limit) {
+    public List<ProductViewVO> getHotProducts(Long limit) {
         int size = (limit == null || limit <= 0) ? 10 : limit.intValue();
         List<Product> products = productMapper.selectHotProducts(size);
         // 2. 装饰：图片/卖家/分类（和 searchByKeyword 一样）
-        List<ProductVO> list = new ArrayList<>();
+        List<ProductViewVO> list = new ArrayList<>();
         for (Product product : products) {
             //根据该商品id查询对应的商品图片
             List<String> images = productImageMapper.selectImageByPid(product.getId());
@@ -143,14 +143,14 @@ public class SearchServiceImpl implements SearchService {
             //根据商品对应的分类id查询分类信息
             Category category = categoryMapper.selectCategoryById(product.getCategoryId());
             //将查到的信息封装为json数据响应给后端
-            list.add(ProductVO.setProductVO(product, images, seller, category));
+            list.add(ProductViewVO.setProductViewVO(product, images, seller, category));
         }
 
         // 3. 算名次和热度百分比
         Integer topView = products.isEmpty() ? null : products.get(0).getViewCount();
         long maxView = (topView == null || topView <= 0) ? 1L : topView;
         for (int i = 0; i < list.size(); i++) {
-            ProductVO vo = list.get(i);
+            ProductViewVO vo = list.get(i);
             vo.setRank((long) (i + 1));
             vo.setHotPercent((int) Math.round(
                     (vo.getViewCount() == null ? 0 : vo.getViewCount()) * 1.0 / maxView * 100));

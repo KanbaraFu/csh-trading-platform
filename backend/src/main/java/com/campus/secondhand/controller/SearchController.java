@@ -57,9 +57,9 @@ public class SearchController {
      * @return
      */
     @GetMapping("/stat/hot-products")
-    public Result<List<ProductVO>> getHotProducts(
+    public Result<List<ProductViewVO>> getHotProducts(
             @RequestParam(required = false,defaultValue = "10") Long limit){
-        List<ProductVO> hotProducts = searchService.getHotProducts(limit);
+        List<ProductViewVO> hotProducts = searchService.getHotProducts(limit);
         return Result.success(hotProducts);
     }
 
