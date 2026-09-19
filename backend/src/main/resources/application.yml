@@ -12,3 +12,10 @@ spring:
   # 用 @JsonProperty 显式声明了名字，不受本配置影响。
   jackson:
     property-naming-strategy: SNAKE_CASE
+
+# MyBatisPlus
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

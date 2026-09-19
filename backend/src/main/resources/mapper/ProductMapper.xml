@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.secondhand.mapper.ProductMapper">
+
+    <resultMap id="productVOMap" type="com.campus.secondhand.vo.ProductVO">
+        <id property="id" column="id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="title" column="title"/>
+        <result property="price" column="price"/>
+        <result property="originalPrice" column="original_price"/>
+        <result property="condition" column="condition"/>
+        <result property="status" column="status"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="cover" column="cover"/>
+        <result property="location" column="location"/>
+        <result property="createTime" column="create_time"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="sellerName" column="seller_name"/>
+        <result property="sellerAvatar" column="seller_avatar"/>
+    </resultMap>
+
+    <select id="selectProductPage" resultMap="productVOMap">
+        SELECT
+            p.id, p.seller_id, p.category_id, p.title, p.price, p.original_price,
+            p.`condition`, p.status, p.view_count, p.cover, p.location, p.create_time,
+            c.name AS category_name,
+            u.nickname AS seller_name,
+            u.avatar AS seller_avatar
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        LEFT JOIN user u ON p.seller_id = u.id
+        <where>
+            <if test="categoryId != null">
+                AND p.category_id = #{categoryId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND p.title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="condition != null and condition != ''">
+                AND p.`condition` = #{condition}
+            </if>
+            <if test="minPrice != null">
+                AND p.price &gt;= #{minPrice}
+            </if>
+            <if test="maxPrice != null">
+                AND p.price &lt;= #{maxPrice}
+            </if>
+            <if test="status != null">
+                AND p.status = #{status}
+            </if>
+            <if test="sellerId != null">
+                AND p.seller_id = #{sellerId}
+            </if>
+        </where>
+        ORDER BY p.create_time DESC
+    </select>
+
+    <resultMap id="productDetailVOMap" type="com.campus.secondhand.vo.ProductDetailVO">
+        <id property="id" column="id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="price" column="price"/>
+        <result property="originalPrice" column="original_price"/>
+        <result property="stock" column="stock"/>
+        <result property="condition" column="condition"/>
+        <result property="status" column="status"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="salesCount" column="sales_count"/>
+        <result property="cover" column="cover"/>
+        <result property="location" column="location"/>
+        <result property="createTime" column="create_time"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="sellerName" column="seller_name"/>
+        <result property="sellerAvatar" column="seller_avatar"/>
+    </resultMap>
+
+    <select id="selectProductDetail" resultMap="productDetailVOMap">
+        SELECT
+            p.id, p.seller_id, p.category_id, p.title, p.description, p.price, p.original_price,
+            p.stock, p.`condition`, p.status, p.view_count, p.sales_count,
+            p.cover, p.location, p.create_time,
+            c.name AS category_name,
+            u.nickname AS seller_name,
+            u.avatar AS seller_avatar
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        LEFT JOIN user u ON p.seller_id = u.id
+        WHERE p.id = #{id}
+    </select>
+
+</mapper>
