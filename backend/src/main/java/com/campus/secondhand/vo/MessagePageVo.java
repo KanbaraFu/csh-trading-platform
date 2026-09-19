@@ -1,5 +1,6 @@
 package com.campus.secondhand.vo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,9 +23,11 @@ public class MessagePageVo {
     private Long total;
 
     /** 当前页码 */
+    @JsonProperty("pageNum")
     private Long pageNum;
 
     /** 每页条数 */
+    @JsonProperty("pageSize")
     private Long pageSize;
 
     /** 各分类计数 */
