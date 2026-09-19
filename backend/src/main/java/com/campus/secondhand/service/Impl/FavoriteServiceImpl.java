@@ -1,4 +1,4 @@
-package com.campus.secondhand.service.serviceImpl;
+package com.campus.secondhand.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campus.secondhand.common.BizException;
@@ -12,7 +12,7 @@ import com.campus.secondhand.support.ProductDecorator;
 import com.campus.secondhand.vo.FavoritePageVO;
 import com.campus.secondhand.vo.FavoriteToggleVO;
 import com.campus.secondhand.vo.FavoriteVO;
-import com.campus.secondhand.vo.ProductVO;
+import com.campus.secondhand.vo.FACProductVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -126,12 +126,12 @@ public class FavoriteServiceImpl implements FavoriteService {
         }
         //3.批量查询商品解决n+1问题
         List<Long> productIds = all.stream().map(Favorite::getProductId).distinct().toList();
-        Map<Long, ProductVO> productMap = productDecorator.decorateBatch(productIds).stream().collect(Collectors.toMap(ProductVO::getId, Function.identity(), (a, b) -> a));
+        Map<Long, FACProductVO> productMap = productDecorator.decorateBatch(productIds).stream().collect(Collectors.toMap(FACProductVO::getId, Function.identity(), (a, b) -> a));
         //4.组装收藏vo集合+计算总价(分页前)
         List<FavoriteVO> full =new ArrayList<>();
         BigDecimal totalAmount=BigDecimal.ZERO;
         for(Favorite f:all){
-            ProductVO product = productMap.get(f.getProductId());
+            FACProductVO product = productMap.get(f.getProductId());
             if(product==null){
                 continue;
             }
