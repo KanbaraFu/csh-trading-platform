@@ -9,6 +9,7 @@ import com.campus.secondhand.service.CommentService;
 import com.campus.secondhand.mapper.CommentMapper;
 import com.campus.secondhand.service.MessageNotifyService;
 import com.campus.secondhand.utils.ExceptionUtil;
+import com.campus.secondhand.utils.SendMessageUtil;
 import com.campus.secondhand.vo.CommentVo;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.internal.constraintvalidators.hv.br.CNPJValidator;
@@ -29,7 +30,8 @@ public class CommentServiceImpl extends CrudRepository<CommentMapper, Comment>
     @Autowired
     private CommentMapper commentMapper;
     @Autowired
-    private MessageNotifyService messageNotifyServiceImpl;
+    private SendMessageUtil sendMessageUtil;
+
 
     /**
      * 添加评论业务逻辑层
@@ -80,7 +82,7 @@ public class CommentServiceImpl extends CrudRepository<CommentMapper, Comment>
         int row=commentMapper.insert(comment);
         ExceptionUtil.isTrue(row!=1,"添加评论失败");
         //评论后相关发送信息
-        messageNotifyServiceImpl.notifyComment(productId, userId, comment.getReplyUserId());
+        sendMessageUtil.notifyComment(productId, userId, comment.getReplyUserId());
     }
 
     /**
