@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.secondhand.mapper.OrderMapper">
+    <!--分页查询订单id-->
+    <select id="selectOrderIdsByPage" resultType="java.lang.Long">
+        select o.id from `order` o
+        <where>
+            <if test="query != null and query.status != null and query.status != 'all'">
+                and o.status = #{query.status}
+            </if>
+            <if test="query != null and query.role != null and query.role == 'buyer'">
+                and o.buyer_id = #{userId}
+            </if>
+            <if test="query != null and query.role != null and query.role == 'seller'">
+                and o.seller_id = #{userId}
+            </if>
+        </where>
+    </select>
+
+    <!--通过订单id查询订单列表及每个订单的详情-->
+    <select id="selectOrderListByOrderIds" resultMap="OrderBaseMapper.OrderVOMap">
+        select
+            <include refid="OrderBaseMapper.Order_Column_List"/>,
+            t1.nickname as buyer_nickname,
+            t1.avatar as buyer_avatar,
+            t2.nickname as seller_nickname,
+            t2.avatar as seller_avatar,
+            <include refid="OrderBaseMapper.OrderItem_Column_List"/>
+        from `order` o
+        left join (select id, nickname, avatar from `user`) t1
+        on o.buyer_id = t1.id
+        left join (select id, nickname, avatar from `user`) t2
+        on o.seller_id = t2.id
+        left join order_item oi on o.id = oi.order_id
+        where o.id in
+        <foreach collection="orderIds" item="id" open="(" separator="," close=")">
+        #{id}
+        </foreach>
+        order by o.create_time desc
+    </select>
+
+    <!--查询各个状态订单详情-->
+    <select id="selectAllStatus" resultType="java.util.Map">
+        SELECT status, COUNT(*) AS `count` FROM `order`
+        <where>
+            <if test="query != null and query.role != null and query.role == 'buyer'">
+                and buyer_id = #{userId}
+            </if>
+            <if test="query != null and query.role != null and query.role == 'seller'">
+                and seller_id = #{userId}
+            </if>
+        </where>
+        GROUP BY status ORDER BY status
+    </select>
+</mapper>

@@ -284,4 +284,8 @@ public class RedisUtil {
     public Long zSize(String key) {
         return redisTemplate.opsForZSet().size(key);
     }
+
+    public void set(String key, Long id, int i) {
+
+    }
 }
