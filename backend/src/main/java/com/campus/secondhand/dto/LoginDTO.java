@@ -1,5 +1,6 @@
 package com.campus.secondhand.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
@@ -9,13 +10,17 @@ import jakarta.validation.constraints.NotBlank;
  */
 @Data
 public class LoginDTO {
-    @NotBlank(message = "账号不能为空")
-    private String username;
-    @NotBlank(message = "密码不能为空")
-    private String password;
-
     /**
      * 手机号（登录时优先使用该字段）
      */
+    @JsonProperty("phone")
+    @NotBlank(message = "手机号不能为空")
     private String phone;
+
+    @NotBlank(message = "密码不能为空")
+    @JsonProperty("password")
+    private String password;
+
+    @JsonProperty("username")
+    private String username;
 }
