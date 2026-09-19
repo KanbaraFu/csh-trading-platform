@@ -23,7 +23,7 @@ public class SearchResultVO {
     private String keyword;
 
     /** 当前页商品（装饰后） */
-    private List<ProductVO> records;
+    private List<ProductViewVO> records;
 
     /** 总条数 */
     private Long total;
