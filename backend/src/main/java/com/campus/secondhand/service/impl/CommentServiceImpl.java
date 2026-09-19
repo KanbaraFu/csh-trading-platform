@@ -7,6 +7,7 @@ import com.campus.secondhand.dto.CommentPageDto;
 import com.campus.secondhand.pojo.Comment;
 import com.campus.secondhand.service.CommentService;
 import com.campus.secondhand.mapper.CommentMapper;
+import com.campus.secondhand.service.MessageNotifyService;
 import com.campus.secondhand.utils.ExceptionUtil;
 import com.campus.secondhand.vo.CommentVo;
 import org.apache.commons.lang3.StringUtils;
@@ -27,7 +28,8 @@ public class CommentServiceImpl extends CrudRepository<CommentMapper, Comment>
     implements CommentService{
     @Autowired
     private CommentMapper commentMapper;
-
+    @Autowired
+    private MessageNotifyService messageNotifyServiceImpl;
 
     /**
      * 添加评论业务逻辑层
@@ -74,8 +76,11 @@ public class CommentServiceImpl extends CrudRepository<CommentMapper, Comment>
         comment.setUserId(userId);
         comment.setProductId(productId);
         comment.setContent(content);
+        //添加评论，返回相应行数
         int row=commentMapper.insert(comment);
         ExceptionUtil.isTrue(row!=1,"添加评论失败");
+        //评论后相关发送信息
+        messageNotifyServiceImpl.notifyComment(productId, userId, comment.getReplyUserId());
     }
 
     /**
