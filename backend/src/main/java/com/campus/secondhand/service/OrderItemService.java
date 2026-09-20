@@ -11,5 +11,5 @@ import com.campus.secondhand.vo.OrderVO;
 * @createDate 2026-09-16 11:56:41
 */
 public interface OrderItemService extends IRepository<OrderItem> {
-    Result<OrderVO> getOrderDetail(Long orderId, Long userId);
+    OrderVO getOrderDetail(Long orderId, Long userId);
 }
