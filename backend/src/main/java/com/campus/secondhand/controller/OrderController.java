@@ -46,7 +46,7 @@ public class OrderController {
                                              @SessionAttribute(value = "token", required = false) String token) {
         if (tokenUtil.validate(token)) {
             Long userId = tokenUtil.getUserId(token);
-            List<OrderVO> newOrders = orderService.createOrder(orderCreateDTO, 1L);
+            List<OrderVO> newOrders = orderService.createOrder(orderCreateDTO, userId);
             return Result.success(newOrders);
         } else {
             return Result.error("请先登录！");
