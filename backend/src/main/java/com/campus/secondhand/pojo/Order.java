@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
  * 订单
  * @TableName order
  */
-@TableName(value ="order")
+@TableName(value ="`order`")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

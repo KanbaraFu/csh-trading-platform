@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.repository.IRepository;
 import com.campus.secondhand.common.PageResult;
 import com.campus.secondhand.common.Result;
 import com.campus.secondhand.dto.OrderCreateDTO;
+import com.campus.secondhand.dto.OrderPayDTO;
 import com.campus.secondhand.dto.OrderQueryDTO;
 import com.campus.secondhand.pojo.Order;
 import com.campus.secondhand.vo.OrderVO;
@@ -19,17 +20,25 @@ import java.util.List;
 public interface OrderService extends IRepository<Order> {
     /**
      * 创建订单
-     * @param orderCreateDTO
-     * @param userId 用户id（也可以理解为买家id）
+     * @param orderCreateDTO 前端传递的参数
+     * @param userId 当前登录的用户id（鉴权,这里也可以理解为买家id）
      * @return 返回订单
      */
     List<OrderVO> createOrder(OrderCreateDTO orderCreateDTO, Long userId);
 
     /**
      * 获取订单列表
-     * @param orderQueryDTO
-     * @param userId
+     * @param orderQueryDTO 前端传递的查询订单列表的参数
+     * @param userId 当前登录的用户id（鉴权）
      * @return 返回订单列表
      */
     PageResult<OrderVO> getOrders(OrderQueryDTO orderQueryDTO, Long userId);
+
+    /**
+     * 支付订单
+     * @param orderPayDTO 前端传递的支付方式
+     * @param orderId 需要支付的订单id
+     * @param userId 当前登录的用户id（鉴权,这里也可以理解为买家id）
+     */
+    void payOrder( OrderPayDTO orderPayDTO, Long orderId, Long userId);
 }

@@ -1,5 +1,7 @@
 package com.campus.secondhand.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.repository.CrudRepository;
@@ -7,6 +9,7 @@ import com.campus.secondhand.common.BizException;
 import com.campus.secondhand.common.Constants;
 import com.campus.secondhand.common.PageResult;
 import com.campus.secondhand.dto.OrderCreateDTO;
+import com.campus.secondhand.dto.OrderPayDTO;
 import com.campus.secondhand.dto.OrderQueryDTO;
 import com.campus.secondhand.pojo.Address;
 import com.campus.secondhand.pojo.Order;
@@ -14,6 +17,8 @@ import com.campus.secondhand.pojo.OrderItem;
 import com.campus.secondhand.pojo.User;
 import com.campus.secondhand.service.*;
 import com.campus.secondhand.mapper.OrderMapper;
+import com.campus.secondhand.utils.ExceptionUtil;
+import com.campus.secondhand.utils.SendMessageUtil;
 import com.campus.secondhand.vo.OrderDetailVO;
 import com.campus.secondhand.vo.OrderItemVO;
 import com.campus.secondhand.vo.OrderVO;
@@ -53,31 +58,26 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private SendMessageUtil sendMessageUtil;
+
     @Override
     @Transactional
     public List<OrderVO> createOrder(OrderCreateDTO orderCreateDTO, Long buyId) {
-        if (CollectionUtils.isEmpty(orderCreateDTO.getItems())) {
-            throw BizException.badRequest("下单商品不能为空！");
-        }
+        ExceptionUtil.isBadRequest(CollectionUtils.isEmpty(orderCreateDTO.getItems()), "下单商品不能为空！");
+
         List<Order> orders = new ArrayList<>();         // 订单集合
         List<OrderItem> orderItems = new ArrayList<>(); // 订单详情集合
         List<OrderVO> orderVOS = new ArrayList<>();     // 返回前端的订单结果集合
 
         // 获取id对应的商品信息
         List<OrderDetailVO> orderDetailVOS = orderMapper.selectProductByOrderCreateDTO(orderCreateDTO);
-        if (orderDetailVOS.size() != orderCreateDTO.getItems().size()) {
-            String message = "订单创建失败！该商品已经售卖完成或者已下架！";
-            throw BizException.badRequest(message);
-        }
+        ExceptionUtil.isBadRequest(orderDetailVOS.size() != orderCreateDTO.getItems().size(), "订单创建失败！该商品已经售卖完成或者已下架！");
 
         // TODO 获取地址（这里作为临时调用，因为获取的不一定是Address对象，有可能是addressVO对象。需要日后看看是否需要AddressVO，如果没有就自己创建）
         Address address = addressService.getById(orderCreateDTO.getAddressId());
-        if (address == null) {
-            throw BizException.badRequest("下单商品不能为空");
-        }
-        if (!address.getUserId().equals(buyId)) {
-            throw BizException.badRequest("您无权使用该收货地址！");
-        }
+        ExceptionUtil.isBadRequest(address == null, "地址不能为空！");
+        ExceptionUtil.isForbidden(!address.getUserId().equals(buyId), "您无权使用该收货地址！");
 
         // 生成地址快照
         String addressSnapshot =
@@ -130,11 +130,8 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
 
         // 插入新添加的订单列表
         int row1 = orderMapper.insertOrder(orders);
-        System.out.println(row1);
-        if (row1 <= 0) {
-            String message = "插入订单列表失败！";
-            throw BizException.badRequest(message);
-        }
+        ExceptionUtil.isBadRequest(row1 <= 0, "插入订单列表失败！");
+
 
         String buyerAvatar = userService.getById(buyId).getAvatar();
 
@@ -205,15 +202,20 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
 
         // 插入订单详细表
         int row2 = orderMapper.insertOrderItem(orderItems);
-        if (row2 <= 0) {
-            String message = "插入订单详细信息失败！";
-            throw BizException.badRequest(message);
-        }
+        ExceptionUtil.isBadRequest(row2 <= 0, "插入订单详细信息失败！");
+
 
         // 下单成功后，如果orderCreateDTO提供了cartIds的值，那就需要调用购物车模块中的清空购物车的方法
         if (!CollectionUtils.isEmpty(orderCreateDTO.getCartIds())) {
             cartService.removeByIds(orderCreateDTO.getCartIds());
         }
+
+        // 调用消息模块发送消息
+        orderVOS.forEach(order ->
+                sendMessageUtil.notifyOrderStatus(
+                        Long.valueOf(order.getOrderNo()),
+                        order.getBuyerId(),order.getSellerId(),
+                        order.getStatus()));
 
         return orderVOS;
     }
@@ -230,17 +232,12 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
 
         // 获取分页后的订单id列表
         IPage<Long> orderIds = orderMapper.selectOrderIdsByPage(page, orderQueryDTO,userId);
-        if (orderIds == null) {
-            String message = "订单id获取失败!";
-            throw BizException.notFound(message);
-        }
+        ExceptionUtil.isNotFound(orderIds == null, "订单id获取失败!");
 
         // 通过订单ids查询订单列表及其订单详情
         List<OrderVO> orderVOS = orderMapper.selectOrderListByOrderIds(orderIds.getRecords());
-        if (orderVOS == null) {
-            String message = "订单列表获取失败!";
-            throw BizException.notFound(message);
-        }
+        ExceptionUtil.isNotFound(orderVOS == null, "订单列表获取失败!");
+
 
         // 获取订单中的商品数量，并将其设置在vo对象上的itemCount上
         orderVOS.forEach((orderVO) -> orderVO.setItemCount(orderVO.getItems().size()));
@@ -248,10 +245,8 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         // 获取订单id对应的status值（需要获取每个状态的数量来放进counts里）
 
         List<Map<String, Long>> results = orderMapper.selectAllStatus(orderQueryDTO,userId);
-        if (results == null) {
-            String message = "状态筛选获取失败！";
-            throw BizException.notFound(message);
-        }
+        ExceptionUtil.isNotFound(results == null, "状态筛选获取失败！");
+
 
         Map<String, Long> orderCounts = new HashMap<>();
 
@@ -266,6 +261,48 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         orderCounts.put("all", counts);
 
         return PageResult.of(page,orderVOS,orderCounts);
+    }
+
+    @Override
+    @Transactional
+    public void payOrder(OrderPayDTO orderPayDTO, Long orderId, Long buyId) {
+
+        ExceptionUtil.isBadRequest(orderPayDTO == null || orderPayDTO.getPayMethod() == null,"未选择支付方式！");
+
+        String payMethod = orderPayDTO.getPayMethod();
+
+        boolean isTurePayMethod =
+                payMethod.equals("campus_card")
+                || payMethod.equals("wechat")
+                || payMethod.equals("alipay");
+        ExceptionUtil.isBadRequest(!isTurePayMethod ,"未选择支付方式！");
+        Order order = orderMapper.selectById(orderId);
+        ExceptionUtil.isNotFound(order == null,"订单不存在！");
+
+
+        //获取当前时间
+        LocalDateTime now = LocalDateTime.parse(LocalDateTime.now().format(Constants.FORMATTER), Constants.FORMATTER);
+
+        // 已支付状态
+        Integer status = Constants.ORDER_STATUS_PAID;
+
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(Order::getStatus, status)
+                .set(Order::getPayTime, now)
+                .set(Order::getPayMethod, payMethod)
+                .set(Order::getUpdateTime, now)
+                .eq(Order::getId, orderId)
+                .eq(Order::getBuyerId, buyId)
+                .eq(Order::getStatus, Constants.ORDER_STATUS_UNPAID);
+
+
+        int row = orderMapper.update(updateWrapper);
+        ExceptionUtil.isBadRequest(row <= 0,"支付失败！订单不存在！");
+        // 发送支付成功的消息
+        sendMessageUtil.notifyOrderStatus(
+                Long.valueOf(order.getOrderNo()),
+                order.getBuyerId(),order.getSellerId(),
+                order.getStatus());
     }
 }
 
