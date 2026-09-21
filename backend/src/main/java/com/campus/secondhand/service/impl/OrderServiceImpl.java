@@ -9,6 +9,7 @@ import com.campus.secondhand.common.BizException;
 import com.campus.secondhand.common.Constants;
 import com.campus.secondhand.common.PageResult;
 import com.campus.secondhand.dto.OrderCreateDTO;
+import com.campus.secondhand.dto.OrderItemDTO;
 import com.campus.secondhand.dto.OrderPayDTO;
 import com.campus.secondhand.dto.OrderQueryDTO;
 import com.campus.secondhand.mapper.ProductMapper;
@@ -16,6 +17,7 @@ import com.campus.secondhand.pojo.*;
 import com.campus.secondhand.service.*;
 import com.campus.secondhand.mapper.OrderMapper;
 import com.campus.secondhand.utils.ExceptionUtil;
+import com.campus.secondhand.utils.RedisUtil;
 import com.campus.secondhand.utils.SendMessageUtil;
 import com.campus.secondhand.vo.OrderDetailVO;
 import com.campus.secondhand.vo.OrderItemVO;
@@ -62,10 +64,35 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
     @Autowired
     private ProductMapper productMapper;
 
+    @Autowired
+    private RedisUtil redisUtil;
+
     @Override
     @Transactional
     public List<OrderVO> createOrder(OrderCreateDTO orderCreateDTO, Long buyerId) {
         ExceptionUtil.isBadRequest(CollectionUtils.isEmpty(orderCreateDTO.getItems()), "下单商品不能为空！");
+
+        // 设置下单防重锁
+        List<Long> productIds = orderCreateDTO.getItems().stream()
+                .map(OrderItemDTO::getProductId)
+                .distinct()
+                .toList();
+        List<String> lockedKeys = new ArrayList<>(productIds.size());
+        try {
+            for (Long productId : productIds) {
+                String key = Constants.orderLockKey(buyerId, productId);
+                Boolean locked = redisUtil.setIfAbsent(key,1, Constants.ORDER_LOCK_TTL);
+                if (Boolean.FALSE.equals(locked)) {
+                    throw BizException.badRequest("操纵太频繁，请稍后再试！");
+                }
+                lockedKeys.add(key);
+            }
+        } catch (RuntimeException e) {
+            if (!lockedKeys.isEmpty()) {
+                redisUtil.delete(lockedKeys); // 回滚已加的部分锁，避免残留误伤
+            }
+            throw e;
+        }
 
         List<Order> orders = new ArrayList<>();         // 订单集合
         List<OrderItem> orderItems = new ArrayList<>(); // 订单详情集合
@@ -75,7 +102,6 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         List<OrderDetailVO> orderDetailVOS = orderMapper.selectProductByOrderCreateDTO(orderCreateDTO);
         ExceptionUtil.isBadRequest(orderDetailVOS.size() != orderCreateDTO.getItems().size(), "订单创建失败！该商品已经售卖完成或者已下架！");
 
-        // TODO 获取地址（这里作为临时调用，因为获取的不一定是Address对象，有可能是addressVO对象。需要日后看看是否需要AddressVO，如果没有就自己创建）
         Address address = addressService.getById(orderCreateDTO.getAddressId());
         ExceptionUtil.isBadRequest(address == null, "地址不能为空！");
         ExceptionUtil.isForbidden(!address.getUserId().equals(buyerId), "您无权使用该收货地址！");
@@ -198,17 +224,15 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
             orderVO.setItems(orderItemVOS);
 
             orderVOS.add(orderVO);
+
+            String key = Constants.orderTimeoutKey(order.getId());
+            redisUtil.set(key,1,Constants.ORDER_TIMEOUT_TTL);
         });
 
         // 插入订单详细表
         int row2 = orderMapper.insertOrderItem(orderItems);
         ExceptionUtil.isBadRequest(row2 <= 0, "插入订单详细信息失败！");
 
-
-        // 获取orderId集合
-        List<Long> orderIds = orders.stream()
-                .map(Order::getId)
-                .toList();
 
         // 扣减库存和累加销量
         changeStockAndSalesCount(orderItems, now, Constants.ORDER_STATUS_UNPAID);
@@ -274,11 +298,19 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
     @Override
     @Transactional
     public void payOrder(OrderPayDTO orderPayDTO, Long orderId, Long buyerId) {
-
         Order order = orderMapper.selectById(orderId);
         ExceptionUtil.isNotFound(order == null,"订单不存在！");
         ExceptionUtil.isForbidden(!order.getBuyerId().equals(buyerId), "非常抱歉，您无权支付该订单！");
         ExceptionUtil.isBadRequest(order.getStatus().equals(Constants.ORDER_STATUS_PAID),"该订单已支付完成，无法重复支付！");
+
+        // 订单超时标记
+        String key = Constants.orderTimeoutKey(orderId);
+        if (redisUtil.get(key) == null) {
+            // 调用取消订单的方法
+            cancelOrder(orderId, buyerId);
+            sendMessageUtil.notifyOrderTimeout(orderId,buyerId,order.getSellerId());
+            throw BizException.unauthorized("您的订单因未及时支付已自动取消！");
+        }
 
         String payMethod = orderPayDTO.getPayMethod();
         boolean isTurePayMethod =
@@ -287,8 +319,6 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
                         || payMethod.equals("alipay");
         ExceptionUtil.isBadRequest(!isTurePayMethod ,"未选择支付方式！");
         ExceptionUtil.isBadRequest(orderPayDTO == null || orderPayDTO.getPayMethod() == null || !isTurePayMethod,"未选择支付方式！");
-
-        // TODO 支付防重锁
 
         //获取当前时间
         LocalDateTime now = LocalDateTime.parse(LocalDateTime.now().format(Constants.FORMATTER), Constants.FORMATTER);
@@ -306,6 +336,9 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         // 更新订单信息
         int row = orderMapper.update(updateWrapper);
         ExceptionUtil.isBadRequest(row <= 0,"支付失败！");
+
+        // 删除订单超时标记
+        redisUtil.delete(key);
 
         // 发送支付成功的消息
         sendMessageUtil.notifyOrderStatus(
@@ -382,6 +415,8 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         ExceptionUtil.isNotFound(order == null,"订单不存在！");
         ExceptionUtil.isForbidden(!order.getBuyerId().equals(buyerId), "非常抱歉，您无权取消此订单！");
 
+        String key = Constants.orderTimeoutKey(orderId);
+
         Integer status = order.getStatus();
         ExceptionUtil.isBadRequest(status.equals(Constants.ORDER_STATUS_CANCELED),"该订单已确认取消，无法重复取消！");
         boolean flag = status == Constants.ORDER_STATUS_DELIVERED       // 已发货
@@ -412,7 +447,10 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         int row = orderMapper.update(updateWrapper);
         ExceptionUtil.isBadRequest(row <= 0,"支付失败！");
 
-        // 发送发货成功的消息
+        // 删除订单超时标记
+        redisUtil.delete(key);
+
+        // 发送取消成功的消息
         sendMessageUtil.notifyOrderStatus(
                 Long.valueOf(order.getOrderNo()),
                 order.getBuyerId(),order.getSellerId(),
@@ -469,4 +507,5 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
             }
         });
     }
+
 }
