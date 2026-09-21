@@ -238,23 +238,9 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         // 开启分页
         Page<OrderVO> page = new Page<>(pageNum,pageSize);
 
-        // 获取分页后的订单id列表
-        IPage<Long> orderIds = orderMapper.selectOrderIdsByPage(page, orderQueryDTO,userId);
-        ExceptionUtil.isNotFound(orderIds == null, "订单id获取失败!");
-
-        // 通过订单ids查询订单列表及其订单详情
-        List<OrderVO> orderVOS = orderMapper.selectOrderListByOrderIds(orderIds.getRecords());
-        ExceptionUtil.isNotFound(orderVOS == null, "订单列表获取失败!");
-
-
-        // 获取订单中的商品数量，并将其设置在vo对象上的itemCount上
-        orderVOS.forEach((orderVO) -> orderVO.setItemCount(orderVO.getItems().size()));
-
         // 获取订单id对应的status值（需要获取每个状态的数量来放进counts里）
-
         List<Map<String, Long>> results = orderMapper.selectAllStatus(orderQueryDTO,userId);
         ExceptionUtil.isNotFound(results == null, "状态筛选获取失败！");
-
 
         Map<String, Long> orderCounts = new HashMap<>();
 
@@ -267,6 +253,20 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         }
 
         orderCounts.put("all", counts);
+
+        // 获取分页后的订单id列表
+        IPage<Long> orderIds = orderMapper.selectOrderIdsByPage(page, orderQueryDTO,userId);
+        ExceptionUtil.isNotFound(orderIds == null, "订单id获取失败!");
+        if (orderIds.getTotal() <= 0) { // 空订单时直接返回空集合
+            return PageResult.empty(pageNum,pageSize,orderCounts);
+        }
+        // 通过订单ids查询订单列表及其订单详情
+        List<OrderVO> orderVOS = orderMapper.selectOrderListByOrderIds(orderIds.getRecords());
+        ExceptionUtil.isNotFound(orderVOS == null, "订单列表获取失败!");
+
+
+        // 获取订单中的商品数量，并将其设置在vo对象上的itemCount上
+        orderVOS.forEach((orderVO) -> orderVO.setItemCount(orderVO.getItems().size()));
 
         return PageResult.of(page,orderVOS,orderCounts);
     }
