@@ -51,6 +51,7 @@
         <result property="title" column="title"/>
         <result property="price" column="price"/>
         <result property="originalPrice" column="original_price"/>
+        <result property="stock" column="stock"/>
         <result property="condition" column="condition"/>
         <result property="status" column="status"/>
         <result property="viewCount" column="view_count"/>
@@ -145,7 +146,7 @@
     <select id="selectProductPage" resultMap="productVOMap">
         SELECT
         p.id, p.seller_id, p.category_id, p.title, p.price, p.original_price,
-        p.`condition`, p.status, p.view_count, p.cover, p.location, p.create_time,
+        p.stock, p.`condition`, p.status, p.view_count, p.cover, p.location, p.create_time,
         c.name AS category_name,
         u.nickname AS seller_name,
         u.avatar AS seller_avatar

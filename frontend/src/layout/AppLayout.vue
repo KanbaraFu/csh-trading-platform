@@ -8,7 +8,6 @@ import { useMessageStore } from '@/store/message'
 import { useFavoriteStore } from '@/store/favorite'
 import { useCartStore } from '@/store/cart'
 import { setUnauthorizedHandler } from '@/utils/request'
-import { USER_ID_KEY } from '@/constants/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -30,7 +29,8 @@ setUnauthorizedHandler(() => {
 })
 
 async function hydrate() {
-  if (!localStorage.getItem(USER_ID_KEY)) return
+  if (!userStore.token) return
+  // 刷新页面时重新拉取一次资料，保证昵称 / 头像等与服务端一致
   await userStore.fetchMe().catch(() => null)
   if (!userStore.isLogin) return
   await Promise.all([
@@ -72,7 +72,7 @@ onMounted(hydrate)
           <router-link to="/publish">发布闲置</router-link>
         </div>
       </div>
-      <p class="copyright">© 2026 淘学二手 · 课程设计演示项目，交易数据均为模拟数据</p>
+      <p class="copyright">© 2026 淘学二手 · 校园二手交易平台</p>
     </footer>
 
     <BottomTabBar />

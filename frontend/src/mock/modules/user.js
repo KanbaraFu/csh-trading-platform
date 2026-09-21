@@ -4,7 +4,7 @@ import { decorateProduct, fail, nowText, paginate, requireLogin, stripPassword }
 import { avatarUrl } from '@/utils/image'
 
 const PHONE_RE = /^1\d{10}$/
-// 模拟 Redis 键 captcha:register:{phone}
+// 对应 Redis 键 captcha:register:{phone}
 const captchaStore = new Map()
 
 export function sendCaptcha({ body }) {
@@ -12,14 +12,14 @@ export function sendCaptcha({ body }) {
   if (!PHONE_RE.test(phone)) fail('请输入正确的 11 位手机号')
   const code = String(Math.floor(100000 + Math.random() * 900000))
   captchaStore.set(phone, { code, createTime: Date.now() })
-  // 演示环境直接把验证码返回，便于快速体验
+  // 直接把验证码返回，便于快速体验
   return { phone, code, expireSeconds: 300 }
 }
 
 function verifyCaptcha(phone, code) {
   const record = captchaStore.get(phone)
   const valid = record && record.code === String(code || '')
-  // 演示环境放行固定验证码，避免刷新后无法注册
+  // 放行固定验证码，避免刷新后无法注册
   if (!valid && String(code) !== '123456') {
     fail('验证码错误或已过期，请重新获取')
   }

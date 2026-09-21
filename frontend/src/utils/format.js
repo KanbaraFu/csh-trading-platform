@@ -89,3 +89,35 @@ export function discountText(price, originalPrice) {
   if (!o || !p || o <= p) return ''
   return `${((p / o) * 10).toFixed(1)} 折`
 }
+
+/**
+ * 卖家昵称：后端全局 Jackson 策略是 SNAKE_CASE，
+ * 商品列表 / 详情用的 ProductVO、ProductDetailVO 字段叫 sellerName（序列化后 seller_name），
+ * 榜单用的 ProductViewVO 字段叫 sellerNickname（seller_nickname）。
+ * 两种命名都兼容，避免出现「只有头像没有用户名」。
+ */
+export function sellerNickname(product) {
+  return product?.seller_nickname || product?.seller_name || '已注销用户'
+}
+
+/**
+ * 订单收货地址：本地 Mock 的订单详情返回 address_text，
+ * 真实后端 OrderVO 的字段是 addressSnapshot（序列化后 address_snapshot），两种都兼容，
+ * 避免订单详情页「收货信息」一栏空白。
+ */
+export function orderAddressText(order) {
+  return order?.address_text || order?.address_snapshot || '暂无收货地址信息'
+}
+
+/**
+ * 商品状态标签：0 已下架 / 2 已售出 / 在售但库存为 0 也按已售出处理，其余返回空串。
+ * 列表卡片与详情页统一用它，保证「已下架」与「已售出」能区分展示。
+ */
+export function productStatusLabel(product) {
+  const status = Number(product?.status)
+  if (status === 0) return '已下架'
+  if (status === 2) return '已售出'
+  const { stock } = product || {}
+  if (status === 1 && stock !== null && stock !== undefined && Number(stock) === 0) return '已售出'
+  return ''
+}

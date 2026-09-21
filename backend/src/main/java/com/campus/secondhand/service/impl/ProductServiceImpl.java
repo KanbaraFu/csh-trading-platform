@@ -32,7 +32,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public IPage<ProductVO> getProductPage(ProductQueryDTO queryDTO) {
         Page<ProductVO> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
-        return productMapper.selectProductPage(
+        IPage<ProductVO> result = productMapper.selectProductPage(
                 page,
                 queryDTO.getCategoryId(),
                 queryDTO.getKeyword(),
@@ -42,6 +42,15 @@ public class ProductServiceImpl implements ProductService {
                 queryDTO.getStatus(),
                 queryDTO.getSellerId()
         );
+        // 列表接口必须带上“是否可购买”，前端商品卡片据此判断是否置灰；
+        // 该字段缺失会让前端把所有商品误判为已售出。
+        result.getRecords().forEach(vo -> vo.setIsAvailable(isAvailable(vo.getStatus(), vo.getStock())));
+        return result;
+    }
+
+    private boolean isAvailable(Integer status, Integer stock) {
+        return status != null && status == Constants.PRODUCT_STATUS_ON
+                && stock != null && stock > 0;
     }
 
     @Override
@@ -60,6 +69,9 @@ public class ProductServiceImpl implements ProductService {
         detailVO.setImages(images.stream()
                 .map(ProductImage::getUrl)
                 .collect(Collectors.toList()));
+
+        // 详情页据此决定展示「立即购买」还是「已售出」，必须显式返回
+        detailVO.setIsAvailable(isAvailable(detailVO.getStatus(), detailVO.getStock()));
 
         return detailVO;
     }

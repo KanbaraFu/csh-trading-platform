@@ -95,7 +95,7 @@ export function nowText() {
 }
 
 /**
- * 站内通知（模拟 /api/messages 的内部调用）
+ * 站内通知（内部调用 /api/messages）
  */
 export function pushMessage(userId, type, title, content, bizId = 0) {
   const data = db()

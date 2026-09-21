@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import SkeletonCard from '@/components/SkeletonCard.vue'
 import { useProductStore } from '@/store/product'
 import { getHotProducts, getHotWords, getOverview } from '@/api/stat'
-import { shortNumber, toAmount } from '@/utils/format'
+import { sellerNickname, shortNumber, toAmount } from '@/utils/format'
 import { svgCover } from '@/utils/image'
 
 const router = useRouter()
@@ -110,7 +110,7 @@ onMounted(async () => {
         <span class="stat-icon green"><el-icon :size="20"><Wallet /></el-icon></span>
         <div>
           <strong>¥{{ toAmount(overview?.trade_amount ?? 0) }}</strong>
-          <span>模拟交易总额</span>
+          <span>交易总额</span>
         </div>
       </div>
       <div class="stat-card">
@@ -159,7 +159,7 @@ onMounted(async () => {
               <p class="rank-title">{{ item.title }}</p>
               <p class="rank-meta">
                 <span>{{ item.category_name }}</span>
-                <span>{{ item.seller_nickname }}</span>
+                <span>{{ sellerNickname(item) }}</span>
                 <span class="metric">{{ metricValue(item) }}</span>
               </p>
               <div class="bar">

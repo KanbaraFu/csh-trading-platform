@@ -1,10 +1,22 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import * as authApi from '@/api/auth'
-import { TOKEN_KEY, USER_ID_KEY } from '@/constants/auth'
+import { TOKEN_KEY, USER_ID_KEY, USER_KEY } from '@/constants/auth'
+
+// 读取本地用户资料快照，脏数据直接丢弃，避免初始化时抛异常
+function readCachedUser() {
+  const raw = localStorage.getItem(USER_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    localStorage.removeItem(USER_KEY)
+    return null
+  }
+}
 
 export const useUserStore = defineStore('user', () => {
-  const user = ref(null)
+  const user = ref(readCachedUser())
   const token = ref(localStorage.getItem(TOKEN_KEY) || '')
   const addresses = ref([])
   const defaultAddressId = ref(0)
@@ -14,9 +26,23 @@ export const useUserStore = defineStore('user', () => {
   const avatar = computed(() => user.value?.avatar || '')
   const nickname = computed(() => user.value?.nickname || '未登录')
 
+  // 统一落盘：token 是请求头来源，userId 与资料快照用于刷新后立即恢复登录态
+  function persistSession() {
+    if (token.value) localStorage.setItem(TOKEN_KEY, token.value)
+    if (user.value?.id) {
+      localStorage.setItem(USER_ID_KEY, String(user.value.id))
+      localStorage.setItem(USER_KEY, JSON.stringify(user.value))
+    }
+  }
+
   function applyLogin(result) {
-    token.value = result.token || localStorage.getItem(TOKEN_KEY) || ''
-    user.value = result.user
+    token.value = result?.token || localStorage.getItem(TOKEN_KEY) || ''
+    // 后端 LoginVO 返回字段为 userVO，本地 Mock 返回 user，这里统一兼容
+    user.value =
+      result?.user ||
+      result?.userVO ||
+      (result?.userId ? { id: result.userId, username: result.username } : null)
+    persistSession()
   }
 
   async function loginForm(payload) {
@@ -31,26 +57,47 @@ export const useUserStore = defineStore('user', () => {
     return result
   }
 
-  async function fetchMe() {
-    if (!localStorage.getItem(USER_ID_KEY)) return null
+  async function loadProfile() {
     const data = await authApi.getMe()
     user.value = data
     token.value = localStorage.getItem(TOKEN_KEY) || token.value
+    persistSession()
     return data
+  }
+
+  async function fetchMe() {
+    if (!token.value) return null
+    return loadProfile()
+  }
+
+  let pendingProfile = null
+
+  // 刷新或首次进入时补齐登录态：本地已有快照则直接复用，避免重复请求
+  function ensureSession() {
+    if (!token.value || user.value) return Promise.resolve(user.value)
+    if (!pendingProfile) {
+      pendingProfile = loadProfile()
+        .catch(() => {
+          clearSession()
+          return null
+        })
+        .finally(() => {
+          pendingProfile = null
+        })
+    }
+    return pendingProfile
   }
 
   async function updateProfile(payload) {
     const data = await authApi.updateMe(payload)
     user.value = data
+    persistSession()
     return data
   }
 
   async function logout() {
     await authApi.logout().catch(() => null)
-    user.value = null
-    token.value = ''
-    addresses.value = []
-    defaultAddressId.value = 0
+    clearSession()
   }
 
   function clearSession() {
@@ -58,6 +105,9 @@ export const useUserStore = defineStore('user', () => {
     token.value = ''
     addresses.value = []
     defaultAddressId.value = 0
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_ID_KEY)
+    localStorage.removeItem(USER_KEY)
   }
 
   async function fetchAddresses(params) {
@@ -99,6 +149,7 @@ export const useUserStore = defineStore('user', () => {
     loginForm,
     registerForm,
     fetchMe,
+    ensureSession,
     updateProfile,
     logout,
     clearSession,

@@ -32,4 +32,9 @@ public class ProductDetailVO {
 
     // 商品图片列表
     private List<String> images;
+
+    /**
+     * 是否可购买：status == 1 且 stock > 0。
+     */
+    private Boolean isAvailable;
 }

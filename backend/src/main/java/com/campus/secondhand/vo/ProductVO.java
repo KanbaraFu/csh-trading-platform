@@ -14,6 +14,7 @@ public class ProductVO {
     private String title;
     private BigDecimal price;
     private BigDecimal originalPrice;
+    private Integer stock;
     private String condition;
     private Integer status;
     private Integer viewCount;
@@ -25,4 +26,9 @@ public class ProductVO {
     private String categoryName;
     private String sellerName;
     private String sellerAvatar;
+
+    /**
+     * 是否可购买：status == 1 且 stock > 0。
+     */
+    private Boolean isAvailable;
 }

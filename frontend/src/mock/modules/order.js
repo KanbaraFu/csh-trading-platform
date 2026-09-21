@@ -1,7 +1,7 @@
-// 订单与交易模块 Mock：创建订单 / 模拟支付 / 发货 / 确认收货 / 取消 / 列表 / 详情
+// 订单与交易模块 Mock：创建订单 / 支付 / 发货 / 确认收货 / 取消 / 列表 / 详情
 import { db, nextId } from '../index'
 import { decorateOrder, fail, nowText, paginate, pushMessage, requireLogin } from '../helpers'
-// 模拟 Redis 键 order:lock:user:{userId}:product:{productId}，10 秒内防重复下单
+// 对应 Redis 键 order:lock:user:{userId}:product:{productId}，10 秒内防重复下单
 const orderLock = new Map()
 
 function buildOrderNo() {

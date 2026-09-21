@@ -34,7 +34,7 @@ export const ORDER_TABS = [
 // 订单进度条步骤
 export const ORDER_FLOW_STEPS = [
   { title: '提交订单', desc: '订单创建成功' },
-  { title: '买家付款', desc: '模拟支付完成' },
+  { title: '买家付款', desc: '支付完成' },
   { title: '卖家发货', desc: '商品已交付' },
   { title: '确认收货', desc: '买家确认' },
   { title: '交易完成', desc: '订单归档' },
@@ -46,9 +46,9 @@ export function orderFlowStep(status) {
   return map[status] ?? 0
 }
 
-// 支付方式（模拟）
+// 支付方式
 export const PAY_METHODS = [
-  { label: '校园一卡通（模拟）', value: 'campus_card', icon: 'CreditCard' },
-  { label: '微信支付（模拟）', value: 'wechat', icon: 'ChatDotRound' },
-  { label: '支付宝（模拟）', value: 'alipay', icon: 'Wallet' },
+  { label: '校园一卡通', value: 'campus_card', icon: 'CreditCard' },
+  { label: '微信支付', value: 'wechat', icon: 'ChatDotRound' },
+  { label: '支付宝', value: 'alipay', icon: 'Wallet' },
 ]
