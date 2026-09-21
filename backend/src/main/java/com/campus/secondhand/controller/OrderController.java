@@ -3,6 +3,7 @@ package com.campus.secondhand.controller;
 
 import com.campus.secondhand.common.PageResult;
 import com.campus.secondhand.common.Result;
+import com.campus.secondhand.dto.OrderCreateDTO;
 import com.campus.secondhand.dto.OrderQueryDTO;
 import com.campus.secondhand.pojo.Order;
 import com.campus.secondhand.pojo.OrderItem;
@@ -36,8 +37,10 @@ public class OrderController {
      * @return 返回创建的结果
      */
     @PostMapping
-    public Result createOrder() {
-        return null;
+    public Result<List<OrderVO>> createOrder(@RequestBody OrderCreateDTO orderCreateDTO) {
+        // TODO 获取Token，需要等待用户模块的完成
+        List<OrderVO> newOrders = orderService.createOrder(orderCreateDTO, 1L);
+        return Result.success(newOrders);
     }
 
     /**
@@ -45,9 +48,10 @@ public class OrderController {
      * @return 返回一个订单列表
      */
     @GetMapping
-    public PageResult<OrderVO> getOrders(@ModelAttribute OrderQueryDTO orderQueryDTO) {
+    public Result<PageResult<OrderVO>> getOrders(@ModelAttribute OrderQueryDTO orderQueryDTO) {
         // TODO 获取Token，需要等待用户模块的完成
-        return orderService.getOrders(orderQueryDTO,1L);
+        PageResult<OrderVO> orders =  orderService.getOrders(orderQueryDTO,1L);
+        return Result.success(orders);
     }
 
     /**
@@ -58,7 +62,8 @@ public class OrderController {
     @GetMapping("/{id}")
     public Result<OrderVO> getOrderDetail(@PathVariable("id") Long orderId) {
         // TODO 获取Token，需要等待用户模块的完成
-        return orderItemService.getOrderDetail(orderId, 1L);
+        OrderVO orderVO = orderItemService.getOrderDetail(orderId, 1L);
+        return Result.success(orderVO);
     }
 
     /**

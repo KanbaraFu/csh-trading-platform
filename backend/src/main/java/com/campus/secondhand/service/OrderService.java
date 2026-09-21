@@ -3,9 +3,11 @@ package com.campus.secondhand.service;
 import com.baomidou.mybatisplus.extension.repository.IRepository;
 import com.campus.secondhand.common.PageResult;
 import com.campus.secondhand.common.Result;
+import com.campus.secondhand.dto.OrderCreateDTO;
 import com.campus.secondhand.dto.OrderQueryDTO;
 import com.campus.secondhand.pojo.Order;
 import com.campus.secondhand.vo.OrderVO;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -15,5 +17,19 @@ import java.util.List;
 * @createDate 2026-09-16 11:56:41
 */
 public interface OrderService extends IRepository<Order> {
+    /**
+     * 创建订单
+     * @param orderCreateDTO
+     * @param userId 用户id（也可以理解为买家id）
+     * @return 返回订单
+     */
+    List<OrderVO> createOrder(OrderCreateDTO orderCreateDTO, Long userId);
+
+    /**
+     * 获取订单列表
+     * @param orderQueryDTO
+     * @param userId
+     * @return 返回订单列表
+     */
     PageResult<OrderVO> getOrders(OrderQueryDTO orderQueryDTO, Long userId);
 }

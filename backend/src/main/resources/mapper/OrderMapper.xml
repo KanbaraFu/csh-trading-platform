@@ -54,4 +54,82 @@
         </where>
         GROUP BY status ORDER BY status
     </select>
+
+    <select id="selectProductByOrderCreateDTO" resultMap="OrderBaseMapper.OrderDetailMap">
+        select
+            <include refid="OrderBaseMapper.OrderDetail_Column_List" />
+        from (
+        <foreach collection="query.items" item="item" separator=" union all ">
+            select
+                id,
+                seller_id,
+                title,
+                cover,
+                price,
+                stock,
+                `status`,
+                #{item.quantity} as quantity,
+                price * #{item.quantity} as total_amount
+            from product
+            where
+                id = #{item.productId}
+            and
+                #{item.quantity} &lt;= stock
+            and
+                `status` = 1
+        </foreach>
+        ) p;
+    </select>
+
+    <!--添加订单-->
+    <insert id="insertOrder" useGeneratedKeys="true" keyProperty="id">
+        insert into `order` (
+            order_no,
+            buyer_id,
+            seller_id,
+            total_amount,
+            pay_amount,
+            address_snapshot,
+            remark,
+            create_time,
+            update_time)
+        values
+            <foreach collection="orders" item="order" separator=",">
+                (
+                #{order.orderNo},
+                #{order.buyerId},
+                #{order.sellerId},
+                #{order.totalAmount},
+                #{order.payAmount},
+                #{order.addressSnapshot},
+                #{order.remark},
+                #{order.createTime},
+                #{order.updateTime}
+                )
+            </foreach>
+    </insert>
+
+    <!--添加订单详情-->
+    <insert id="insertOrderItem">
+        insert into order_item (
+            order_id,
+            product_id,
+            product_title,
+            product_cover,
+            price,
+            quantity,
+            total_amount)
+        values
+            <foreach collection="items" item="item" separator=",">
+                (
+                #{item.orderId},
+                #{item.productId},
+                #{item.productTitle},
+                #{item.productCover},
+                #{item.price},
+                #{item.quantity},
+                #{item.totalAmount}
+                )
+            </foreach>
+    </insert>
 </mapper>

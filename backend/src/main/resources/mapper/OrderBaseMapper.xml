@@ -38,6 +38,16 @@
                     resultMap="OrderItemMap"/>
     </resultMap>
 
+    <!--订单商品字段映射-->
+    <resultMap id="OrderDetailMap" type="com.campus.secondhand.vo.OrderDetailVO">
+        <id property="productId" column="id" />
+        <result property="productTitle" column="title" />
+        <result property="productCover" column="cover" />
+        <result property="productStock" column="stock" />
+        <result property="quantity" column="quantity" />
+        <result property="totalAmount" column="total_amount" />
+    </resultMap>
+
     <!--订单明细字段-->
     <sql id="OrderItem_Column_List">
         oi.id as item_id,
@@ -54,5 +64,18 @@
         o.id,o.order_no,o.buyer_id,o.seller_id,o.total_amount,o.pay_amount,
         o.status,o.address_snapshot,o.pay_time,o.remark,o.pay_method,
         o.create_time,o.update_time
+    </sql>
+
+    <!--订单商品字段-->
+    <sql id="OrderDetail_Column_List">
+        p.id as id,
+        p.seller_id as seller_id,
+        p.title as title,
+        p.cover as cover,
+        p.price as price,
+        p.stock as stock,
+        p.`status` as `status`,
+        p.total_amount as total_amount,
+        p.quantity as quantity
     </sql>
 </mapper>
