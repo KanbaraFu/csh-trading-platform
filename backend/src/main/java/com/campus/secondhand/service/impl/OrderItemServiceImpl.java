@@ -2,8 +2,6 @@ package com.campus.secondhand.service.impl;
 
 import com.baomidou.mybatisplus.spring.repository.CrudRepository;
 import com.campus.secondhand.common.BizException;
-import com.campus.secondhand.common.Constants;
-import com.campus.secondhand.common.Result;
 import com.campus.secondhand.pojo.OrderItem;
 import com.campus.secondhand.service.OrderItemService;
 import com.campus.secondhand.mapper.OrderItemMapper;
@@ -24,7 +22,7 @@ public class OrderItemServiceImpl extends CrudRepository<OrderItemMapper, OrderI
     private OrderItemMapper orderItemMapper;
 
     @Override
-    public Result<OrderVO> getOrderDetail(Long orderId, Long userId) {
+    public OrderVO getOrderDetail(Long orderId, Long userId) {
         OrderVO orderVO = orderItemMapper.selectOrderItemById(orderId);
         if (orderVO == null) {
             String message = "订单不存在！";
@@ -36,7 +34,7 @@ public class OrderItemServiceImpl extends CrudRepository<OrderItemMapper, OrderI
             throw BizException.badRequest(message);
         }
 
-        return Result.success("订单详情获取成功！",orderVO);
+        return orderVO;
     }
 }
 

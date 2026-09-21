@@ -39,6 +39,7 @@ application-*.local.yml
 *.njsproj
 *.sln
 *.sw?
-
+*.md
 # ===== 工具目录 =====
 .codebuddy/
+docs/

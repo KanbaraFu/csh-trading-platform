@@ -124,6 +124,10 @@ public class PageResult<T> implements Serializable {
         return new PageResult<>(Collections.emptyList(), 0L, pageNum, pageSize);
     }
 
+    public static <T> PageResult<T> empty(long pageNum, long pageSize, Map<String, Long> orderCounts) {
+        return new PageResult<>(Collections.emptyList(), 0L, pageNum, pageSize, orderCounts);
+    }
+
     /**
      * 总页数（向上取整），前端分页组件有时需要。
      */

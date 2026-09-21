@@ -1,9 +1,6 @@
 package com.campus.secondhand.vo;
 
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.campus.secondhand.pojo.OrderItem;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -51,11 +48,11 @@ public class OrderVO {
 
     private String buyerNickname;       // 买家
 
-    private String buyerAvatar;         // 买家地址
+    private String buyerAvatar;         // 买家头像
 
     private String sellerNickname;      // 卖家
 
-    private String sellerAvatar;        // 卖家地址
+    private String sellerAvatar;        // 卖家头像
 
     private List<OrderItemVO> items;      // 订单的每个商品详情
 

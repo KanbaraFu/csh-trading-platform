@@ -1,9 +1,13 @@
 package com.campus.secondhand.mapper;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.campus.secondhand.dto.OrderCreateDTO;
 import com.campus.secondhand.dto.OrderQueryDTO;
 import com.campus.secondhand.pojo.Order;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.campus.secondhand.pojo.OrderItem;
+import com.campus.secondhand.vo.OrderDetailVO;
+import com.campus.secondhand.vo.OrderItemVO;
 import com.campus.secondhand.vo.OrderVO;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -27,6 +31,15 @@ public interface OrderMapper extends BaseMapper<Order> {
 
     // 查询各个状态订单详情
     List<Map<String,Long>> selectAllStatus(@Param("query") OrderQueryDTO orderQueryDTO, @Param("userId") Long userId);
+
+    // 查询创建订单专用的商品信息
+    List<OrderDetailVO> selectProductByOrderCreateDTO(@Param("query") OrderCreateDTO orderCreateDTO);
+
+    // 添加订单
+    int insertOrder(@Param("orders") List<Order> orders);
+
+    // 添加订单详情信息
+    int insertOrderItem(@Param("items") List<OrderItem> orderItem);
 }
 
 

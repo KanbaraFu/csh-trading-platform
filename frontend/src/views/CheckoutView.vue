@@ -106,27 +106,17 @@ async function submitOrder() {
     return
   }
 
-  // 按卖家分组，多卖家时自动拆分为多个订单
-  const groups = new Map()
-  items.value.forEach((item) => {
-    const sellerId = item.product.seller_id
-    if (!groups.has(sellerId)) groups.set(sellerId, [])
-    groups.get(sellerId).push(item)
-  })
-
   submitting.value = true
   try {
-    const orders = []
-    for (const group of groups.values()) {
-      const order = await orderStore.create({
-        addressId: selectedAddressId.value,
-        items: group.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
-        remark: remark.value,
-        cartIds: group.map((item) => item.cart_id).filter(Boolean),
-      })
-      orders.push(order)
-    }
-    createdOrders.value = orders
+    // 一次性提交全部商品，由后端按卖家自动拆单，返回订单集合
+    const result = await orderStore.create({
+      addressId: selectedAddressId.value,
+      items: items.value.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
+      remark: remark.value,
+      cartIds: items.value.map((item) => item.cart_id).filter(Boolean),
+    })
+    // 兼容后端返回数组或单个订单两种形态
+    createdOrders.value = (Array.isArray(result) ? result : [result]).filter(Boolean)
     successVisible.value = true
     await cartStore.fetchCart()
   } finally {
@@ -135,15 +125,16 @@ async function submitOrder() {
 }
 
 async function payNow() {
-  const order = createdOrders.value[0]
-  if (!order) return
+  if (!createdOrders.value.length) return
   for (const item of createdOrders.value) {
     await orderStore.pay(item.id, payMethod.value)
   }
-  ElMessage.success(`模拟支付成功，共支付 ¥${toAmount(order.pay_amount)}`)
+  // 拆单后可能生成多个订单，实付金额为各订单之和
+  const paidAmount = createdOrders.value.reduce((sum, item) => sum + Number(item.pay_amount || 0), 0)
+  ElMessage.success(`模拟支付成功，共支付 ¥${toAmount(paidAmount)}`)
   successVisible.value = false
   router.replace(createdOrders.value.length === 1
-    ? { name: 'order-detail', params: { id: order.id } }
+    ? { name: 'order-detail', params: { id: createdOrders.value[0].id } }
     : { name: 'orders' })
 }
 

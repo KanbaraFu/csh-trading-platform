@@ -1,6 +1,6 @@
 import { get, post } from '@/utils/request'
 
-// D. 订单与交易模块 —— 对齐文档接口清单
+// D. 订单与交易模块
 export function createOrder(data) {
   return post('/orders', data)
 }

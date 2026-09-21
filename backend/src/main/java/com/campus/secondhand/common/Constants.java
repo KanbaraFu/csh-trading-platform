@@ -1,6 +1,7 @@
 package com.campus.secondhand.common;
 
 import java.time.Duration;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 全局常量：统一返回码、接口前缀、Redis Key、缓存过期时间、业务状态值。
@@ -10,6 +11,9 @@ public final class Constants {
     private Constants() {
         // 工具类，禁止实例化
     }
+
+    /* ==================== 其他返回值 ==================== */
+    public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /* ==================== 统一返回码 ==================== */
 
