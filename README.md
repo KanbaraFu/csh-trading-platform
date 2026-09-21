@@ -9,7 +9,7 @@
 ```
 csh-trading-platform/
 ├── frontend/   # 前端工程（Vite root 即此目录）
-├── backend/    # 后端工程（SpringBoot，待创建）
+├── backend/    # 后端工程（SpringBoot）
 └── docs/       # 前后端共享的接口契约与联调文档
 ```
 
