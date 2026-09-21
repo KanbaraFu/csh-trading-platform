@@ -12,10 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentDto {
-    @JsonProperty("productId")
     private Long productId;//产品id
-    @JsonProperty("content")
+
     private String content;//评论内容
-    @JsonProperty("parentId")
+
     private Long parentId;//评论父ID
 }

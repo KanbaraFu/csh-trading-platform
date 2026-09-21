@@ -39,6 +39,8 @@ public class MessageVo {
     /** 创建时间 */
     private Date createTime;
 // ========== 关联商品信息（可为空） ==========
+    /** 关联商品id（仅 comment 类型有值） */
+    private Long productId;
     /** 关联商品封面图 */
     private String productCover;
 
