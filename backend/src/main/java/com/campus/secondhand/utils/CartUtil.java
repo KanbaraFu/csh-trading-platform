@@ -52,7 +52,7 @@ public class CartUtil {
         cartItemVO.setQuantity(cart.getQuantity());
         //数据库库存0/1前度需要布尔值
         cartItemVO.setSelected(cart.getSelected() != null && cart.getSelected() == Constants.FLAG_YES);
-        cartItemVO.setCreatTime(cart.getCreateTime());
+        cartItemVO.setCreateTime(cart.getCreateTime());
         cartItemVO.setUpdateTime(cart.getUpdateTime());
         cartItemVO.setProduct(FACProductVO);
         cartItemVO.setSubtotal(calcSubtotal(FACProductVO,cart.getQuantity()));//总价
