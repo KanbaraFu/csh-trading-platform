@@ -22,13 +22,24 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,username,password,nickname,avatar,phone,
-        gender,status,student_no,college,auth_status,
-        bio,create_time,update_time
+        id, username, password, nickname, avatar, phone,
+        gender, status, student_no, college, auth_status,
+        bio, create_time, update_time
     </sql>
+
+    <!-- 按登录账号查询用户 -->
+    <select id="selectByUsername" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM user
+        WHERE username = #{username}
+        LIMIT 1
+    </select>
+
     <select id="selectUserById" resultType="com.campus.secondhand.pojo.User">
         select <include refid="Base_Column_List"/>
         from user
         where id=#{userId}
     </select>
+
 </mapper>
