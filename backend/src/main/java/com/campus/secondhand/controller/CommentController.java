@@ -56,7 +56,6 @@ public class CommentController {
         PageResult<CommentVo> result=commentServiceImpl.getCommentsByProductId(commentPageDto);
         return Result.success(result);
     }
-
     /**
      * 删除评论（只能删自己的，子评论连带删除）
      * @param id 评论id（路径参数）
