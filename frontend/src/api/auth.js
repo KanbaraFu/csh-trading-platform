@@ -21,8 +21,23 @@ export function getMe() {
   return get('/user/me')
 }
 
+// 个人中心统计：我的订单 / 待付款 / 收藏 / 购物车 / 未读消息 条数
+export function getMyStats() {
+  return get('/user/me/stats')
+}
+
 export function updateMe(data) {
   return put('/user/me', data)
+}
+
+// 个人中心「增」：新增用户（POST /api/user）
+export function createUser(data) {
+  return post('/user', data)
+}
+
+// 个人中心「删」：删除当前登录用户（DELETE /api/user/me）
+export function deleteMe() {
+  return del('/user/me')
 }
 
 export function getMyProducts(params) {

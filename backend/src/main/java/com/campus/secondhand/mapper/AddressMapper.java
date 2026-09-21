@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @Entity com.campus.secondhand.pojo.Address
 */
 public interface AddressMapper extends BaseMapper<Address> {
-
+    // 单表 CRUD 由 MyBatis-Plus BaseMapper 提供
 }
 
 

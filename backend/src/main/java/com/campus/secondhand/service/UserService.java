@@ -19,7 +19,7 @@ public interface UserService extends IRepository<User> {
     LoginVO login(LoginDTO loginDTO);
 
     /*注册*/
-    void register(RegisterDTO registerDTO);
+    LoginVO register(RegisterDTO registerDTO);
 
     /*验证码*/
     String sendCode(String phone);
