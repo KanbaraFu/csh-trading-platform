@@ -1,6 +1,7 @@
 package com.campus.secondhand.service.Impl;
 
 import com.campus.secondhand.common.Constants;
+import com.campus.secondhand.dto.SearchDTO;
 import com.campus.secondhand.mapper.*;
 import com.campus.secondhand.pojo.Category;
 import com.campus.secondhand.pojo.Product;
@@ -33,22 +34,17 @@ public class SearchServiceImpl implements SearchService {
     private StatMapper statMapper;
 
     /**
-     *
-     * @param keyword
-     * @param pageNum
-     * @param pageSize
-     * @param sort
-     * @param minPrice
-     * @param maxPrice
-     * @return
+     * 通过搜索关键词查询商品信息
+     * @param searchDTO 搜索参数（keyword/categoryId/pageNum/pageSize/sort/minPrice/maxPrice）
+     * @return 分页结果
      */
     @Override
-    public SearchResultVO searchByKeyword(String keyword,
-                                          Long pageNum,
-                                          Long pageSize,
-                                          String sort,
-                                          BigDecimal minPrice,
-                                          BigDecimal maxPrice) {
+    public SearchResultVO searchByKeyword(SearchDTO searchDTO) {
+        // 从 DTO 取参
+        String keyword = searchDTO.getKeyword();
+        BigDecimal minPrice = searchDTO.getMinPrice();
+        BigDecimal maxPrice = searchDTO.getMaxPrice();
+
         // 搜索词计入热词榜（Redis 不可用时忽略，不影响搜索）
         try {
             if (keyword != null && !keyword.isBlank()) {
@@ -57,16 +53,19 @@ public class SearchServiceImpl implements SearchService {
         } catch (Exception ignored) {
         }
         // 参数兜底
-        long pn = (pageNum == null || pageNum < 1) ? 1 : pageNum;
-        long ps = (pageSize == null || pageSize < 1) ? 12 : pageSize;
-        String st = (sort == null || sort.isBlank()) ? "new" : sort;
+        long pn = (searchDTO.getPageNum() == null || searchDTO.getPageNum() < 1) ? 1 : searchDTO.getPageNum();
+        long ps = (searchDTO.getPageSize() == null || searchDTO.getPageSize() < 1) ? 12 : searchDTO.getPageSize();
+        String st = (searchDTO.getSort() == null || searchDTO.getSort().isBlank()) ? "new" : searchDTO.getSort();
+
+        // categoryId=0（前端"全部分类"）转成 null，SQL 不加过滤
+        Long cid = (searchDTO.getCategoryId() == null || searchDTO.getCategoryId() == 0) ? null : searchDTO.getCategoryId();
 
         // 总数（分页 total）
-        Long total = productMapper.countByKeyword(keyword, minPrice, maxPrice);
+        Long total = productMapper.countByKeyword(keyword, cid, minPrice, maxPrice);
 
         // 当前页商品（关键词 + 价格 + 排序 + 分页，一条 SQL）
         List<Product> products = productMapper.selectByKeyword(
-                keyword, minPrice, maxPrice, st, (pn - 1) * ps, ps);
+                keyword, cid, minPrice, maxPrice, st, (pn - 1) * ps, ps);
 
         // 装饰：图片/卖家/分类
         List<ProductViewVO> productViewVOList = new ArrayList<>();
@@ -89,7 +88,7 @@ public class SearchServiceImpl implements SearchService {
 
 
     /**
-     *
+     *搜索热词
      * @return
      */
     @Override
@@ -125,7 +124,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     /**
-     *
+     *获取火热商品
      * @param limit
      * @return
      */
@@ -159,7 +158,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     /**
-     *
+     *统计（商品/在售/用户/订单/收藏/今日新增/交易额）信息
      * @return
      */
     @Override
@@ -177,7 +176,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     /**
-     *
+     *获取浏览记录
      * @param productId
      * @return
      */
@@ -198,7 +197,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     /**
-     *
+     *获取销售信息，如：销售量，浏览量
      * @param productId
      * @return
      */

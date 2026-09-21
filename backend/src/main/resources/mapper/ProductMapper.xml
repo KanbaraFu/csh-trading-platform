@@ -57,31 +57,43 @@
         <where>
             status != 0
             <if test="keyword != null and keyword != ''">
-                AND (title LIKE concat('%', #{keyword}, '%')
-                OR description LIKE concat('%', #{keyword}, '%'))
+                and (title like concat('%', #{keyword}, '%')
+                or description like concat('%', #{keyword}, '%'))
             </if>
             <if test="minPrice != null">
-                AND price &gt;= #{minPrice}
+                and price &gt;= #{minPrice}
             </if>
             <if test="maxPrice != null">
-                AND price &lt;= #{maxPrice}
+                and price &lt;= #{maxPrice}
+            </if>
+            <if test="categoryId != null and categoryId != 0">
+                AND category_id = #{categoryId}
             </if>
         </where>
     </sql>
 
     <select id="countByKeyword" resultType="java.lang.Long">
-        SELECT COUNT(*) FROM product
+        select COUNT(*) from product
         <include refid="Keyword_Filter"/>
     </select>
 
     <select id="selectByKeyword" resultType="com.campus.secondhand.pojo.Product">
-        SELECT <include refid="Base_Column_List"/> FROM product
+        select <include refid="Base_Column_List"/>
+        from product
         <include refid="Keyword_Filter"/>
         <choose>
-            <when test="sort == 'hot'">ORDER BY (view_count + sales_count * 10) DESC</when>
-            <when test="sort == 'price_asc'">ORDER BY price ASC</when>
-            <when test="sort == 'price_desc'">ORDER BY price DESC</when>
-            <otherwise>ORDER BY create_time DESC</otherwise>
+            <when test="sort == 'hot'">
+                order by (view_count + sales_count * 10) desc
+            </when>
+            <when test="sort == 'price_asc'">
+                order by price asc
+            </when>
+            <when test="sort == 'price_desc'">
+                order by price desc
+            </when>
+            <otherwise>
+                order by create_time desc
+            </otherwise>
         </choose>
         LIMIT #{offset}, #{pageSize}
     </select>

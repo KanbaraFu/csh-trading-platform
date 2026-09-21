@@ -1,27 +1,17 @@
 package com.campus.secondhand.service;
 
+import com.campus.secondhand.dto.SearchDTO;
 import com.campus.secondhand.vo.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public interface SearchService {
     /**
-     *
-     * @param keyword
-     * @param pageNum
-     * @param pageSize
-     * @param sort
-     * @param minPrice
-     * @param maxPrice
-     * @return
+     * 按关键词 + 分类 + 价格 + 排序 + 分页搜索商品
+     * @param searchDTO 搜索参数（keyword/categoryId/pageNum/pageSize/sort/minPrice/maxPrice）
+     * @return 分页结果
      */
-    SearchResultVO searchByKeyword(String keyword,
-                                   Long pageNum,
-                                   Long pageSize,
-                                   String sort,
-                                   BigDecimal minPrice,
-                                   BigDecimal maxPrice);
+    SearchResultVO searchByKeyword(SearchDTO searchDTO);
 
 
     /**

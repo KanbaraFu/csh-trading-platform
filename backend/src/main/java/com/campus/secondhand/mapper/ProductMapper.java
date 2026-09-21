@@ -18,6 +18,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * 按关键词 + 价格区间 + 排序 + 分页查在售商品
      */
     List<Product> selectByKeyword(@Param("keyword") String keyword,
+                                  @Param("categoryId") Long categoryId,
                                   @Param("minPrice") BigDecimal minPrice,
                                   @Param("maxPrice") BigDecimal maxPrice,
                                   @Param("sort") String sort,
@@ -28,6 +29,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * 同样条件下的总数（分页 total 用）
      */
     Long countByKeyword(@Param("keyword") String keyword,
+                        @Param("categoryId") Long categoryId,
                         @Param("minPrice") BigDecimal minPrice,
                         @Param("maxPrice") BigDecimal maxPrice);
 
