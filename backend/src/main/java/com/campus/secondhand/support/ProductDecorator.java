@@ -31,10 +31,9 @@ import java.util.stream.Collectors;
  * 但前端商品卡片需要的是卖家昵称、分类名称、图片列表这些“能直接展示的内容”。
  * 把 id 翻译成展示内容的这个过程，就叫“装饰”。
  * <p>
- * 这块本来属于模块 B（商品模块）的职责，但 B 还没写，所以 C 先自己实现一份。
+ * 这块本来属于模块 B（商品模块）的职责
  * 等 B 完成后，可以直接改成调用 B 的服务，C 的业务代码不用动。
  * <p>
- * 用 @Component 交给 Spring 管理，这样 Service 里可以用构造器注入它。
  */
 @Component
 public class ProductDecorator {
@@ -45,10 +44,7 @@ public class ProductDecorator {
     private final CategoryMapper categoryMapper;        // 查分类名称
     private final ProductImageMapper productImageMapper;// 查商品图片列表
 
-    /**
-     * 构造器注入：Spring 启动时会自动把这 4 个 Mapper 的实例传进来。
-     * 用 final + 构造器注入是推荐写法，比 @Autowired 字段注入更安全（不可变、方便测试）。
-     */
+
     public ProductDecorator(ProductMapper productMapper,
                             UserMapper userMapper,
                             CategoryMapper categoryMapper,
