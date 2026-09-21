@@ -38,6 +38,18 @@ const addresses = computed(() => userStore.addresses)
 const selectedAddress = computed(() => addresses.value.find((item) => item.id === selectedAddressId.value) || null)
 const sellerCount = computed(() => new Set(items.value.map((item) => item.product.seller_id)).size)
 
+// 默认选中：优先用后端返回的 selected_id，其次取列表第一条，避免出现「一个都没选中」的死角
+function pickAddressId() {
+  return Number(userStore.defaultAddressId) || Number(addresses.value[0]?.id) || 0
+}
+
+// 选中地址：必须更新页面本地的 selectedAddressId（高亮与下单都用它），同时同步到 store
+function selectAddress(id) {
+  const next = Number(id)
+  selectedAddressId.value = next
+  userStore.setSelectedAddress(next)
+}
+
 function imageOf(item) {
   return item.product?.cover || svgCover(item.product?.title, item.product_id)
 }
@@ -63,7 +75,7 @@ async function load() {
   loading.value = true
   try {
     await userStore.fetchAddresses()
-    selectedAddressId.value = userStore.defaultAddressId
+    selectedAddressId.value = pickAddressId()
 
     const cartIds = String(route.query.cartIds || '').split(',').filter(Boolean)
     if (cartIds.length) {
@@ -91,6 +103,8 @@ async function saveAddress(payload) {
     await userStore.saveAddress(rest, id)
     ElMessage.success(id ? '地址已更新' : '地址已添加')
     addressDialog.value = false
+    // 首次添加地址后自动选中，避免出现「有地址但没选中」的情况
+    if (!selectedAddressId.value) selectedAddressId.value = pickAddressId()
   } finally {
     savingAddress.value = false
   }
@@ -106,27 +120,17 @@ async function submitOrder() {
     return
   }
 
-  // 按卖家分组，多卖家时自动拆分为多个订单
-  const groups = new Map()
-  items.value.forEach((item) => {
-    const sellerId = item.product.seller_id
-    if (!groups.has(sellerId)) groups.set(sellerId, [])
-    groups.get(sellerId).push(item)
-  })
-
   submitting.value = true
   try {
-    const orders = []
-    for (const group of groups.values()) {
-      const order = await orderStore.create({
-        addressId: selectedAddressId.value,
-        items: group.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
-        remark: remark.value,
-        cartIds: group.map((item) => item.cart_id).filter(Boolean),
-      })
-      orders.push(order)
-    }
-    createdOrders.value = orders
+    // 一次性提交全部商品，由后端按卖家自动拆单，返回订单集合
+    const result = await orderStore.create({
+      addressId: selectedAddressId.value,
+      items: items.value.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
+      remark: remark.value,
+      cartIds: items.value.map((item) => item.cart_id).filter(Boolean),
+    })
+    // 兼容后端返回数组或单个订单两种形态
+    createdOrders.value = (Array.isArray(result) ? result : [result]).filter(Boolean)
     successVisible.value = true
     await cartStore.fetchCart()
   } finally {
@@ -135,15 +139,16 @@ async function submitOrder() {
 }
 
 async function payNow() {
-  const order = createdOrders.value[0]
-  if (!order) return
+  if (!createdOrders.value.length) return
   for (const item of createdOrders.value) {
     await orderStore.pay(item.id, payMethod.value)
   }
-  ElMessage.success(`模拟支付成功，共支付 ¥${toAmount(order.pay_amount)}`)
+  // 拆单后可能生成多个订单，实付金额为各订单之和
+  const paidAmount = createdOrders.value.reduce((sum, item) => sum + Number(item.pay_amount || 0), 0)
+  ElMessage.success(`支付成功，共支付 ¥${toAmount(paidAmount)}`)
   successVisible.value = false
   router.replace(createdOrders.value.length === 1
-    ? { name: 'order-detail', params: { id: order.id } }
+    ? { name: 'order-detail', params: { id: createdOrders.value[0].id } }
     : { name: 'orders' })
 }
 
@@ -160,7 +165,7 @@ onMounted(load)
     <header class="page-head fade-up">
       <div>
         <h1>确认订单</h1>
-        <p>核对收货地址与商品清单，提交后即可进行模拟支付</p>
+        <p>核对收货地址与商品清单，提交后即可完成支付</p>
       </div>
       <button class="ghost-btn" type="button" @click="router.back()">返回上一页</button>
     </header>
@@ -190,14 +195,17 @@ onMounted(load)
             新增地址
           </button>
         </div>
-        <div class="address-list">
+        <p v-if="!addresses.length" class="address-empty">
+          还没有收货地址，点击右上角「新增地址」添加一个吧
+        </p>
+        <div v-else class="address-list">
           <button
             v-for="item in addresses"
             :key="item.id"
             class="address-card"
             :class="{ active: selectedAddressId === item.id }"
             type="button"
-            @click="userStore.setSelectedAddress(item.id)"
+            @click="selectAddress(item.id)"
           >
             <div class="address-card__top">
               <strong>{{ item.receiver_name }}</strong>
@@ -263,7 +271,7 @@ onMounted(load)
           </label>
 
           <div class="field">
-            <span class="field__label">支付方式（演示环境为模拟支付）</span>
+            <span class="field__label">支付方式</span>
             <div class="pay-methods">
               <button
                 v-for="method in PAY_METHODS"
@@ -315,7 +323,7 @@ onMounted(load)
       </div>
       <template #footer>
         <el-button @click="payLater">稍后付款</el-button>
-        <el-button type="primary" @click="payNow">立即模拟支付</el-button>
+        <el-button type="primary" @click="payNow">立即支付</el-button>
       </template>
     </el-dialog>
   </div>
@@ -420,6 +428,16 @@ onMounted(load)
 
 .link-btn:hover {
   text-decoration: underline;
+}
+
+.address-empty {
+  padding: 18px;
+  border: 1px dashed var(--c-border);
+  border-radius: 12px;
+  background: #fbfdff;
+  color: var(--c-text-muted);
+  font-size: 13px;
+  text-align: center;
 }
 
 .address-list {

@@ -5,7 +5,7 @@ import { ElMessage } from 'element-plus'
 import UserAvatar from './UserAvatar.vue'
 import { useUserStore } from '@/store/user'
 import { useFavoriteStore } from '@/store/favorite'
-import { discountText, formatDateTime, shortNumber, toAmount } from '@/utils/format'
+import { discountText, formatDateTime, productStatusLabel, sellerNickname, shortNumber, toAmount } from '@/utils/format'
 import { svgCover } from '@/utils/image'
 
 const props = defineProps({
@@ -30,7 +30,13 @@ watch(
 
 const favorited = computed(() => favoriteStore.isFavorited(props.product.id))
 const discount = computed(() => discountText(props.product.price, props.product.original_price))
-const soldOut = computed(() => Number(props.product.status) === 2 || Number(props.product.stock) === 0)
+// 展示状态标签：已下架(0) / 已售出(2) 分别展示，在售但库存为 0 也按已售出处理。
+// 注意不能用 Number(product.stock) === 0 直接判断：后端漏返回 stock 时得到 undefined，
+// 而 Number(null) === 0 会让所有商品被误判成已售出，所以必须先判空再比较。
+const statusLabel = computed(() => productStatusLabel(props.product))
+const unavailable = computed(() => Boolean(statusLabel.value))
+// 卖家昵称：兼容后端的 seller_name / seller_nickname 两种命名
+const sellerName = computed(() => sellerNickname(props.product))
 
 function onImageError() {
   cover.value = svgCover(props.product.title, props.product.id)
@@ -48,11 +54,13 @@ async function toggleFavorite() {
 </script>
 
 <template>
-  <article class="product-card">
+  <article class="product-card" :class="{ 'is-unavailable': unavailable }">
     <router-link class="thumb" :to="{ name: 'product-detail', params: { id: product.id } }">
       <img :src="cover" :alt="product.title" loading="lazy" @error="onImageError" />
       <span v-if="discount" class="discount">{{ discount }}</span>
-      <span v-if="soldOut" class="sold-out">已售出</span>
+      <span v-if="statusLabel" class="status-mask" :class="{ 'is-offline': statusLabel === '已下架' }">
+        {{ statusLabel }}
+      </span>
     </router-link>
 
     <button
@@ -82,8 +90,8 @@ async function toggleFavorite() {
 
       <div v-if="showMeta" class="meta">
         <div class="seller">
-          <UserAvatar :src="product.seller_avatar" :name="product.seller_nickname" :seed="product.seller_id" :size="22" />
-          <span class="seller-name">{{ product.seller_nickname }}</span>
+          <UserAvatar :src="product.seller_avatar" :name="sellerName" :seed="product.seller_id" :size="22" />
+          <span class="seller-name">{{ sellerName }}</span>
         </div>
         <span class="views">
           <el-icon :size="13"><View /></el-icon>
@@ -149,7 +157,8 @@ async function toggleFavorite() {
   box-shadow: 0 4px 10px rgba(255, 122, 69, 0.35);
 }
 
-.sold-out {
+/* 状态遮罩：已售出用深色，已下架用灰蓝，两者一眼可区分 */
+.status-mask {
   position: absolute;
   inset: 0;
   display: grid;
@@ -159,6 +168,16 @@ async function toggleFavorite() {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 2px;
+}
+
+.status-mask.is-offline {
+  background: rgba(100, 116, 139, 0.58);
+  font-size: 14px;
+}
+
+/* 已下架 / 已售出的商品整卡轻微去色，避免看起来仍可购买 */
+.product-card.is-unavailable .thumb img {
+  filter: grayscale(0.4);
 }
 
 .fav-btn {

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="OrderBaseMapper">
+    <!--订单明细字段映射-->
+    <resultMap id="OrderItemMap" type="com.campus.secondhand.vo.OrderItemVO">
+        <id property="id" column="id" />
+        <result property="productId" column="product_id" />
+        <result property="productTitle" column="product_title" />
+        <result property="productCover" column="product_cover" />
+        <result property="price" column="price" />
+        <result property="quantity" column="quantity" />
+        <result property="totalAmount" column="total_amount" />
+    </resultMap>
+
+    <!--订单详情字段映射-->
+    <resultMap id="OrderVOMap" type="com.campus.secondhand.vo.OrderVO">
+        <id property="id" column="id" />
+        <result property="orderNo" column="order_no" />
+        <result property="buyerId" column="buyer_id" />
+        <result property="sellerId" column="seller_id" />
+        <result property="totalAmount" column="total_amount" />
+        <result property="payAmount" column="pay_amount" />
+        <result property="status" column="status" />
+        <result property="addressSnapshot" column="address_snapshot" />
+        <result property="payTime" column="pay_time" />
+        <result property="remark" column="remark" />
+        <result property="payMethod" column="pay_method" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+        <result property="buyerNickname" column="buyer_nickname" />
+        <result property="buyerAvatar" column="buyer_avatar" />
+        <result property="sellerNickname" column="seller_nickname" />
+        <result property="sellerAvatar" column="seller_avatar" />
+        <collection property="items"
+                    columnPrefix="item_"
+                    resultMap="OrderItemMap"/>
+    </resultMap>
+
+    <!--订单商品字段映射-->
+    <resultMap id="OrderDetailMap" type="com.campus.secondhand.vo.OrderDetailVO">
+        <id property="productId" column="id" />
+        <result property="productTitle" column="title" />
+        <result property="productCover" column="cover" />
+        <result property="productStock" column="stock" />
+        <result property="quantity" column="quantity" />
+        <result property="totalAmount" column="total_amount" />
+    </resultMap>
+
+    <!--订单明细字段-->
+    <sql id="OrderItem_Column_List">
+        oi.id as item_id,
+        oi.product_id as item_product_id,
+        oi.product_title as item_product_title,
+        oi.product_cover as item_product_cover,
+        oi.price as item_price,
+        oi.quantity as item_quantity,
+        oi.total_amount as item_total_amount
+    </sql>
+
+    <!--订单详情字段-->
+    <sql id="Order_Column_List">
+        o.id,o.order_no,o.buyer_id,o.seller_id,o.total_amount,o.pay_amount,
+        o.status,o.address_snapshot,o.pay_time,o.remark,o.pay_method,
+        o.create_time,o.update_time
+    </sql>
+
+    <!--订单商品字段-->
+    <sql id="OrderDetail_Column_List">
+        p.id as id,
+        p.seller_id as seller_id,
+        p.title as title,
+        p.cover as cover,
+        p.price as price,
+        p.stock as stock,
+        p.`status` as `status`,
+        p.total_amount as total_amount,
+        p.quantity as quantity
+    </sql>
+</mapper>

@@ -15,6 +15,7 @@ export const useOrderStore = defineStore('order', () => {
     loading.value = true
     try {
       const data = await orderApi.getOrders({ pageNum: 1, pageSize: 10, ...params })
+      console.log(data)
       records.value = data.records
       counts.value = data.counts
       total.value = data.total

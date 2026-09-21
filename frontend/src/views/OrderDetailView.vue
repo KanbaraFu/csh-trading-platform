@@ -7,14 +7,14 @@ import StatusTag from '@/components/StatusTag.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { ORDER_FLOW_STEPS, PAY_METHODS, orderFlowStep, orderStatusDesc, orderStatusLabel, orderStatusType } from '@/constants/order'
 import { useOrderStore } from '@/store/order'
-import { formatDateTime, toAmount } from '@/utils/format'
+import { useUserStore } from '@/store/user'
+import { formatDateTime, orderAddressText, toAmount } from '@/utils/format'
 import { svgCover } from '@/utils/image'
-// Mock 专属演示开关：仅本地 Mock 模式下展示「模拟卖家发货」入口
-import { USE_MOCK } from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
 const orderStore = useOrderStore()
+const userStore = useUserStore()
 
 const loading = ref(true)
 const payVisible = ref(false)
@@ -23,6 +23,10 @@ const payMethod = ref('campus_card')
 const order = computed(() => orderStore.current)
 const flowStep = computed(() => (order.value ? orderFlowStep(order.value.status) : 0))
 const activeStep = computed(() => Math.max(0, flowStep.value - 1))
+// 发货是卖家动作：后端 shipOrder 会校验 order.seller_id == 当前用户，前端按同一规则控制按钮
+const isSeller = computed(() => Boolean(order.value) && Number(order.value.seller_id) === Number(userStore.user?.id))
+// 确认收货是买家动作
+const isBuyer = computed(() => Boolean(order.value) && Number(order.value.buyer_id) === Number(userStore.user?.id))
 
 function payMethodLabel(value) {
   return PAY_METHODS.find((item) => item.value === value)?.label || '—'
@@ -48,7 +52,7 @@ function openPay() {
 
 async function confirmPay() {
   await orderStore.pay(order.value.id, payMethod.value)
-  ElMessage.success('模拟支付成功，等待卖家发货')
+  ElMessage.success('支付成功，等待卖家发货')
   payVisible.value = false
   await load()
 }
@@ -75,9 +79,9 @@ async function confirmReceive() {
   await load()
 }
 
-async function mockShip() {
+async function shipOrder() {
   await orderStore.ship(order.value.id)
-  ElMessage.success('已模拟卖家发货，订单进入待收货状态')
+  ElMessage.success('已发货，等待买家确认收货')
   await load()
 }
 
@@ -121,11 +125,11 @@ onMounted(load)
           </div>
 
           <div class="status-actions">
-            <button v-if="order.status === 0" class="ghost-btn danger" type="button" @click="cancelOrder">取消订单</button>
-            <button v-if="order.status === 1" class="ghost-btn danger" type="button" @click="cancelOrder">取消订单</button>
-            <button v-if="order.status === 1 && USE_MOCK" class="ghost-btn" type="button" @click="mockShip">模拟卖家发货</button>
-            <button v-if="order.status === 2" class="primary-btn" type="button" @click="confirmReceive">确认收货</button>
-            <button v-if="order.status === 0" class="primary-btn" type="button" @click="openPay">立即模拟支付</button>
+            <button v-if="order.status === 0 && isBuyer" class="ghost-btn danger" type="button" @click="cancelOrder">取消订单</button>
+            <button v-if="order.status === 1 && isBuyer" class="ghost-btn danger" type="button" @click="cancelOrder">取消订单</button>
+            <button v-if="order.status === 1 && isSeller" class="primary-btn" type="button" @click="shipOrder">立即发货</button>
+            <button v-if="order.status === 2 && isBuyer" class="primary-btn" type="button" @click="confirmReceive">确认收货</button>
+            <button v-if="order.status === 0 && isBuyer" class="primary-btn" type="button" @click="openPay">立即支付</button>
           </div>
         </div>
 
@@ -164,7 +168,7 @@ onMounted(load)
           <div class="panel-head"><h2>收货信息</h2></div>
           <div class="address">
             <el-icon :size="16"><LocationFilled /></el-icon>
-            <p>{{ order.address_text }}</p>
+            <p>{{ orderAddressText(order) }}</p>
           </div>
           <ul class="meta-list">
             <li><span>订单备注</span><span>{{ order.remark || '无' }}</span></li>
@@ -194,7 +198,7 @@ onMounted(load)
       </div>
     </template>
 
-    <el-dialog v-model="payVisible" title="模拟支付" width="440px" align-center>
+    <el-dialog v-model="payVisible" title="确认支付" width="440px" align-center>
       <div v-if="order" class="pay-body">
         <p class="pay-amount">应付金额 <strong>¥{{ toAmount(order.pay_amount) }}</strong></p>
         <p class="pay-order">订单号：{{ order.order_no }}</p>
@@ -211,7 +215,7 @@ onMounted(load)
             <span>{{ method.label }}</span>
           </button>
         </div>
-        <p class="pay-tip">演示环境为模拟支付，不会产生任何真实扣款。</p>
+        <p class="pay-tip">不会产生任何真实扣款，请放心操作。</p>
       </div>
       <template #footer>
         <el-button @click="payVisible = false">取消</el-button>
@@ -435,6 +439,18 @@ onMounted(load)
   color: var(--c-primary-dark);
   font-size: 13px;
   line-height: 1.7;
+}
+
+/* 地址快照是一整串文本，保证长地址能正常换行且图标不被压缩 */
+.address .el-icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.address p {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .meta-list {

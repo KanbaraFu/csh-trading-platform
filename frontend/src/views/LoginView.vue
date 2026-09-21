@@ -132,7 +132,7 @@ async function handleSendCode() {
   try {
     const data = await sendCaptcha({ phone: registerForm.phone })
     registerForm.code = data.code
-    ElMessage.success(`验证码已发送至 ${data.phone}，演示环境已自动填入：${data.code}`)
+    ElMessage.success(`验证码已发送至 ${data.phone}，已自动填入：${data.code}`)
     startCountdown()
   } finally {
     sending.value = false
@@ -142,11 +142,11 @@ async function handleSendCode() {
 function fillDemo() {
   loginForm.phone = '13800000001'
   loginForm.password = '123456'
-  ElMessage.success('已填入演示账号 13800000001 / 123456')
+  ElMessage.success('已填入账号 13800000001 / 123456')
 }
 
 function forgotPassword() {
-  ElMessage.info('演示项目暂未开放找回密码，可直接使用演示账号登录体验')
+  ElMessage.info('暂未开放找回密码，可直接使用账号密码登录体验')
 }
 </script>
 
@@ -254,10 +254,10 @@ function forgotPassword() {
             {{ loading ? '正在登录…' : '登录' }}
           </button>
 
-          <button class="demo-btn" type="button" @click="fillDemo">
-            <el-icon :size="14"><MagicStick /></el-icon>
-            一键填入演示账号
-          </button>
+<!--          <button class="demo-btn" type="button" @click="fillDemo">-->
+<!--            <el-icon :size="14"><MagicStick /></el-icon>-->
+<!--            一键填入账号-->
+<!--          </button>-->
         </el-form>
 
         <!-- 注册表单 -->
@@ -557,7 +557,7 @@ function forgotPassword() {
   cursor: not-allowed;
 }
 
-.demo-btn {
+/*.demo-btn {
   width: 100%;
   height: 42px;
   margin-top: 12px;
@@ -572,7 +572,7 @@ function forgotPassword() {
   font-size: 13px;
   cursor: pointer;
   transition: background 0.2s;
-}
+}*/
 
 .demo-btn:hover {
   background: #e3fbf5;

@@ -99,7 +99,7 @@ function resolveRoute(method, path) {
 }
 
 /**
- * 模拟网络请求：返回 Promise<{ code, message, data }>
+ * 请求分发：返回 Promise<{ code, message, data }>
  */
 export function mockDispatch(config) {
   const method = String(config.method || 'get').toUpperCase()

@@ -1,7 +1,7 @@
-// 订单与交易模块 Mock：创建订单 / 模拟支付 / 发货 / 确认收货 / 取消 / 列表 / 详情
+// 订单与交易模块 Mock：创建订单 / 支付 / 发货 / 确认收货 / 取消 / 列表 / 详情
 import { db, nextId } from '../index'
 import { decorateOrder, fail, nowText, paginate, pushMessage, requireLogin } from '../helpers'
-// 模拟 Redis 键 order:lock:user:{userId}:product:{productId}，10 秒内防重复下单
+// 对应 Redis 键 order:lock:user:{userId}:product:{productId}，10 秒内防重复下单
 const orderLock = new Map()
 
 function buildOrderNo() {
@@ -37,8 +37,13 @@ export function createOrder({ body }) {
     prepared.push({ product, quantity })
   })
 
-  const sellerIds = [...new Set(prepared.map((item) => item.product.seller_id))]
-  if (sellerIds.length > 1) fail('一个订单只能包含同一卖家的商品，请分开结算')
+  // 按卖家分组：一次结算可包含多个卖家的商品，自动拆分为多个订单
+  const groups = new Map()
+  prepared.forEach((item) => {
+    const sellerId = item.product.seller_id
+    if (!groups.has(sellerId)) groups.set(sellerId, [])
+    groups.get(sellerId).push(item)
+  })
 
   // 扣减库存（对应 UPDATE product SET stock = stock - n WHERE stock >= n）
   prepared.forEach(({ product, quantity }) => {
@@ -48,36 +53,43 @@ export function createOrder({ body }) {
     product.update_time = nowText()
   })
 
-  const totalAmount = Number(prepared.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(2))
-  const orderId = nextId('order')
-  const order = {
-    id: orderId,
-    order_no: buildOrderNo(),
-    buyer_id: user.id,
-    seller_id: sellerIds[0],
-    total_amount: totalAmount,
-    pay_amount: totalAmount,
-    status: 0,
-    address_snapshot: addressText(address),
-    remark: body.remark || '',
-    pay_method: null,
-    pay_time: null,
-    create_time: nowText(),
-    update_time: nowText(),
-  }
-  db().orders.unshift(order)
+  const createdOrders = []
+  groups.forEach((groupItems, sellerId) => {
+    const totalAmount = Number(groupItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(2))
+    const orderId = nextId('order')
+    const order = {
+      id: orderId,
+      order_no: buildOrderNo(),
+      buyer_id: user.id,
+      seller_id: sellerId,
+      total_amount: totalAmount,
+      pay_amount: totalAmount,
+      status: 0,
+      address_snapshot: addressText(address),
+      remark: body.remark || '',
+      pay_method: null,
+      pay_time: null,
+      create_time: nowText(),
+      update_time: nowText(),
+    }
+    db().orders.unshift(order)
 
-  prepared.forEach(({ product, quantity }, index) => {
-    db().orderItems.push({
-      id: orderId * 10 + index + 1,
-      order_id: orderId,
-      product_id: product.id,
-      product_title: product.title,
-      product_cover: product.cover,
-      price: product.price,
-      quantity,
-      total_amount: Number((product.price * quantity).toFixed(2)),
+    groupItems.forEach(({ product, quantity }, index) => {
+      db().orderItems.push({
+        id: orderId * 10 + index + 1,
+        order_id: orderId,
+        product_id: product.id,
+        product_title: product.title,
+        product_cover: product.cover,
+        price: product.price,
+        quantity,
+        total_amount: Number((product.price * quantity).toFixed(2)),
+      })
     })
+
+    pushMessage(user.id, 'trade', '订单创建成功', `订单 ${order.order_no} 已创建，请在 30 分钟内完成支付。`, orderId)
+    pushMessage(sellerId, 'trade', '有新的订单待发货', `买家 ${user.nickname} 拍下了你的商品，等待付款。`, orderId)
+    createdOrders.push(order)
   })
 
   // 下单成功后清理勾选的购物车项
@@ -89,9 +101,8 @@ export function createOrder({ body }) {
     }
   }
 
-  pushMessage(user.id, 'trade', '订单创建成功', `订单 ${order.order_no} 已创建，请在 30 分钟内完成支付。`, orderId)
-  pushMessage(order.seller_id, 'trade', '有新的订单待发货', `买家 ${user.nickname} 拍下了你的商品，等待付款。`, orderId)
-  return decorateOrder(order)
+  // 返回按卖家拆分后的订单数组
+  return createdOrders.map(decorateOrder)
 }
 
 function findOwnOrder(id) {

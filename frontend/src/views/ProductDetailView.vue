@@ -12,7 +12,7 @@ import { useProductStore } from '@/store/product'
 import { useUserStore } from '@/store/user'
 import { createComment } from '@/api/message'
 import { getComments } from '@/api/product'
-import { discountText, formatDateTime, fromNow, shortNumber, toAmount } from '@/utils/format'
+import { discountText, formatDateTime, fromNow, productStatusLabel, sellerNickname, shortNumber, toAmount } from '@/utils/format'
 import { svgCover } from '@/utils/image'
 
 const route = useRoute()
@@ -37,8 +37,40 @@ const contactVisible = ref(false)
 
 const images = computed(() => product.value?.images?.length ? product.value.images : [product.value?.cover])
 const favorited = computed(() => (product.value ? favoriteStore.isFavorited(product.value.id) : false))
-const available = computed(() => Boolean(product.value?.is_available))
+// 是否可购买：优先用后端返回的 is_available；该字段缺失时按状态/库存自行兜底，
+// 避免接口未返回该字段时 Boolean(undefined) 恒为 false，导致所有商品都显示「已售出」。
+const available = computed(() => {
+  const detail = product.value
+  if (!detail) return false
+  if (detail.is_available !== null && detail.is_available !== undefined) {
+    return Boolean(detail.is_available)
+  }
+  const status = Number(detail.status)
+  if (status === 0 || status === 2) return false
+  if (detail.stock === null || detail.stock === undefined) return status === 1
+  return Number(detail.stock) > 0
+})
 const isOwner = computed(() => product.value && userStore.user?.id === product.value.seller_id)
+// 卖家昵称：详情接口字段名是 seller_name，统一兼容后模板可直接使用
+const sellerName = computed(() => sellerNickname(product.value))
+// 展示状态：'已下架' / '已售出' / ''（在售）
+const statusLabel = computed(() => productStatusLabel(product.value))
+// 购买按钮文案：不可购买时按下架 / 已售出分别提示，避免下架商品也被写成「已售出」
+const buyButtonText = computed(() => {
+  if (isOwner.value) return '我发布的商品'
+  if (available.value) return '立即购买'
+  return statusLabel.value ? `该商品${statusLabel.value}` : '暂不可购买'
+})
+// 卖家查看自己商品时的提示，按状态给出对应后续操作
+const ownerTip = computed(() => {
+  if (statusLabel.value === '已下架') {
+    return '这是你发布的商品，当前已下架，可在「个人中心 - 我的发布」中重新上架。'
+  }
+  if (statusLabel.value === '已售出') {
+    return '这是你发布的商品，当前已售出，可在「个人中心」查看相关订单。'
+  }
+  return '这是你发布的商品，可在「个人中心 - 我的发布」中编辑或下架。'
+})
 const discount = computed(() => discountText(product.value?.price, product.value?.original_price))
 const totalPrice = computed(() => Number((Number(product.value?.price || 0) * quantity.value).toFixed(2)))
 
@@ -163,17 +195,23 @@ onMounted(loadDetail)
 
       <section class="detail-main fade-up">
         <div class="gallery">
-          <el-carousel
-            :autoplay="false"
-            height="420px"
-            indicator-position="none"
-            arrow="hover"
-            @change="activeImage = $event"
-          >
-            <el-carousel-item v-for="(url, index) in images" :key="index">
-              <img class="gallery__img" :src="resolveImage(url)" :alt="product.title" @error="onImageError" />
-            </el-carousel-item>
-          </el-carousel>
+          <div class="stage">
+            <el-carousel
+              :autoplay="false"
+              height="420px"
+              indicator-position="none"
+              arrow="hover"
+              @change="activeImage = $event"
+            >
+              <el-carousel-item v-for="(url, index) in images" :key="index">
+                <img class="gallery__img" :src="resolveImage(url)" :alt="product.title" @error="onImageError" />
+              </el-carousel-item>
+            </el-carousel>
+            <!-- 与列表卡片一致：已下架用灰蓝、已售出用深色，一眼可区分 -->
+            <span v-if="statusLabel" class="stage__mask" :class="{ 'is-offline': statusLabel === '已下架' }">
+              {{ statusLabel }}
+            </span>
+          </div>
 
           <div class="thumbs">
             <button
@@ -229,9 +267,9 @@ onMounted(loadDetail)
           </ul>
 
           <div class="seller-card">
-            <UserAvatar :src="product.seller_avatar" :name="product.seller_nickname" :seed="product.seller_id" :size="46" />
+            <UserAvatar :src="product.seller_avatar" :name="sellerName" :seed="product.seller_id" :size="46" />
             <div class="seller-card__body">
-              <strong>{{ product.seller_nickname }}</strong>
+              <strong>{{ sellerName }}</strong>
               <span>{{ product.seller_college || '校园认证用户' }}</span>
             </div>
             <button class="contact-btn" type="button" @click="contactVisible = true">联系卖家</button>
@@ -257,11 +295,11 @@ onMounted(loadDetail)
               加入购物车
             </button>
             <button class="buy-btn" type="button" :disabled="!available || isOwner" @click="buyNow">
-              {{ isOwner ? '我发布的商品' : available ? '立即购买' : '已售出' }}
+              {{ buyButtonText }}
             </button>
           </div>
 
-          <p v-if="isOwner" class="owner-tip">这是你发布的商品，可在「个人中心 - 我的发布」中编辑或下架。</p>
+          <p v-if="isOwner" class="owner-tip">{{ ownerTip }}</p>
         </div>
       </section>
 
@@ -305,10 +343,10 @@ onMounted(loadDetail)
 
     <el-dialog v-model="contactVisible" title="联系卖家" width="380px" align-center>
       <div class="contact">
-        <UserAvatar :src="product?.seller_avatar" :name="product?.seller_nickname" :seed="product?.seller_id" :size="58" />
-        <p class="contact__name">{{ product?.seller_nickname }}</p>
+        <UserAvatar :src="product?.seller_avatar" :name="sellerName" :seed="product?.seller_id" :size="58" />
+        <p class="contact__name">{{ sellerName }}</p>
         <p class="contact__college">{{ product?.seller_college || '校园认证用户' }}</p>
-        <p class="contact__tip">演示环境不提供真实聊天能力，建议在商品评论区留言约定交易时间与地点。</p>
+        <p class="contact__tip">暂不提供实时聊天能力，建议在商品评论区留言约定交易时间与地点。</p>
         <el-button type="primary" round style="width: 100%" @click="contactVisible = false">我知道了</el-button>
       </div>
     </el-dialog>
@@ -331,6 +369,32 @@ onMounted(loadDetail)
 .gallery {
   height: 420px;
   border-radius: var(--radius-card);
+}
+
+/* 主图区：状态遮罩的定位容器 */
+.stage {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.stage__mask {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  background: rgba(17, 24, 39, 0.45);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  pointer-events: none;
+}
+
+/* 已下架：灰蓝底色，与「已售出」的深色区分 */
+.stage__mask.is-offline {
+  background: rgba(100, 116, 139, 0.5);
 }
 
 .side {

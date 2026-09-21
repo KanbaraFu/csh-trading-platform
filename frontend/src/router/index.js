@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { USER_ID_KEY } from '@/constants/auth'
+import { useUserStore } from '@/store/user'
 
 const routes = [
   {
@@ -107,10 +107,14 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0, behavior: 'smooth' }),
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   document.title = to.meta.title ? `${to.meta.title} · 淘学二手` : '淘学二手 · 校园二手交易平台'
-  const hasSession = Boolean(localStorage.getItem(USER_ID_KEY))
-  if (to.meta.requiresAuth && !hasSession) {
+  // 登录页本身不需要校验，直接放行，避免与已失效会话的重定向互相打断
+  if (to.name === 'login') return true
+  const userStore = useUserStore()
+  // 本地有 token 但内存中还没有用户资料（如刚刷新）时补齐一次，避免误判未登录
+  await userStore.ensureSession()
+  if (to.meta.requiresAuth && !userStore.isLogin) {
     ElMessage.warning('请先登录后再继续操作')
     return { name: 'login', query: { redirect: to.fullPath } }
   }
