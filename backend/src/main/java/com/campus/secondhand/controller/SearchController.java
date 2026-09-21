@@ -1,12 +1,12 @@
 package com.campus.secondhand.controller;
 
 import com.campus.secondhand.common.Result;
+import com.campus.secondhand.dto.SearchDTO;
 import com.campus.secondhand.service.SearchService;
 import com.campus.secondhand.vo.*;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RequestMapping("/api")
@@ -22,19 +22,12 @@ public class SearchController {
      *     pageSize:12(default)
      *     sort:new(default)
      * }
+     * @param searchDTO 数据传输对象，接收前端传递的参数
      * @return Result(code,message)
      */
     @GetMapping("/search")
-    public Result<SearchResultVO> search(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false, defaultValue = "1") Long pageNum,
-            @RequestParam(required = false, defaultValue = "12") Long pageSize,
-            @RequestParam(required = false, defaultValue = "new") String sort,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice
-    ) {
-        SearchResultVO searchResultVO = searchService.searchByKeyword(keyword, pageNum, pageSize, sort, minPrice, maxPrice);
-        return Result.success(searchResultVO);
+    public Result<SearchResultVO> search(SearchDTO searchDTO) {
+        return Result.success(searchService.searchByKeyword(searchDTO));
     }
 
     /**
@@ -74,7 +67,7 @@ public class SearchController {
 
     /**
      * 记录商品浏览量
-     * @param productId
+     * @param productId 商品id
      * @return
      */
     @PostMapping("/stat/view/{productId}")
