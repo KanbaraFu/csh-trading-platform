@@ -48,4 +48,18 @@ public interface OrderService extends IRepository<Order> {
      * @param userId 当前登录的用户id（鉴权，这里也可以理解为卖家id）
      */
     void shipOrder(Long orderId, Long userId);
+
+    /**
+     * 确认收获
+     * @param orderId 需要确认收获的订单id
+     * @param userId 当前登录的用户id（鉴权，这里也可以理解为买家id）
+     */
+    void confirmOrder(Long orderId, Long userId);
+
+    /**
+     * 取消订单
+     * @param orderId 需要确认取消的订单id
+     * @param userId 当前登录的用户id（鉴权，这里也可以理解为买家id）
+     */
+    void cancelOrder(Long orderId, Long userId);
 }

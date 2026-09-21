@@ -83,7 +83,7 @@ public class OrderController {
     /**
      * 发货（仅已支付）
      * @param orderId 需要发货的订单id
-     * @return
+     * @return 返回Result结果
      */
     @PostMapping("/{id}/ship")
     public Result<Void> shipOrder(@PathVariable("id") Long orderId) {
@@ -98,17 +98,17 @@ public class OrderController {
      * @return
      */
     @PostMapping("/{id}/confirm")
-    public Result confirmOrder(@PathVariable Integer id) {
-        return null;
+    public Result<Void> confirmOrder(@PathVariable("id") Integer id) {
+        return Result.success();
     }
 
     /**
-     * 取消收获
+     * 取消收货
      * @param id
      * @return
      */
     @PostMapping("/{id}/cancel")
-    public Result cancelOrder(@PathVariable Integer id) {
-        return null;
+    public Result<Void> cancelOrder(@PathVariable("id") Integer id) {
+        return Result.success();
     }
 }

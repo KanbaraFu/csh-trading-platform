@@ -108,8 +108,6 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
                     .map(OrderDetailVO::getTotalAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-
-
             // 生成订单号
             String orderNo = "" +
                     now.getYear() +
@@ -207,6 +205,14 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         ExceptionUtil.isBadRequest(row2 <= 0, "插入订单详细信息失败！");
 
 
+        // 获取orderId集合
+        List<Long> orderIds = orders.stream()
+                .map(Order::getId)
+                .toList();
+
+        // 扣减库存和累加销量
+        changeStockAndSalesCount(orderItems, now, Constants.ORDER_STATUS_UNPAID);
+
         // 下单成功后，如果orderCreateDTO提供了cartIds的值，那就需要调用购物车模块中的清空购物车的方法
         if (!CollectionUtils.isEmpty(orderCreateDTO.getCartIds())) {
             cartService.removeByIds(orderCreateDTO.getCartIds());
@@ -272,7 +278,7 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         Order order = orderMapper.selectById(orderId);
         ExceptionUtil.isNotFound(order == null,"订单不存在！");
         ExceptionUtil.isForbidden(!order.getBuyerId().equals(buyerId), "非常抱歉，您无权支付该订单！");
-        ExceptionUtil.isBadRequest(order.getStatus().equals(Constants.ORDER_STATUS_PAID),"该订单已支付完成！");
+        ExceptionUtil.isBadRequest(order.getStatus().equals(Constants.ORDER_STATUS_PAID),"该订单已支付完成，无法重复支付！");
 
         String payMethod = orderPayDTO.getPayMethod();
         boolean isTurePayMethod =
@@ -287,44 +293,9 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         //获取当前时间
         LocalDateTime now = LocalDateTime.parse(LocalDateTime.now().format(Constants.FORMATTER), Constants.FORMATTER);
 
-        // 扣减库存和累加销量
-        List<OrderItem> orderItems = orderItemService
-                .list(new LambdaQueryWrapper<OrderItem>()
-                        .select(OrderItem::getProductId, OrderItem::getQuantity)
-                        .eq(OrderItem::getOrderId, orderId));
-
-        // 获取对应订单详情表的商品id
-        List<Long> productIds = orderItems.stream()
-                .map(OrderItem::getProductId)
-                .toList();
-
-        // 获取订单对应的商品的对应库存
-        Map<Long, Integer> productStockMap = productMapper.selectByIds(productIds).stream()
-                        .collect(Collectors.toMap(Product::getId, Product::getStock));
-
-        orderItems.forEach(orderItem -> {
-            Product product = new Product();
-            product.setStock(productStockMap.get(orderItem.getProductId()));
-            // 扣减库存和累加销量的条件
-            LambdaUpdateWrapper<Product> updateWrapper1 = new LambdaUpdateWrapper<>();
-            updateWrapper1.setDecrBy(Product::getStock, orderItem.getQuantity()) // 库存-数量
-                    .setIncrBy(Product::getSalesCount,  orderItem.getQuantity()) // 销量+数量
-                    .set(Product::getUpdateTime, now)                            // 商品的更新时间
-                    .eq(Product::getSellerId, order.getSellerId())
-                    .eq(Product::getId, orderItem.getProductId())
-                    // 检查库存是否足够
-                    .eq(Product::getStatus, 1)                               // 检查是否处于可售卖状态
-                    .ge(Product::getStock, orderItem.getQuantity());             // 库存大于购买数量时再减
-            if (product.getStock() - orderItem.getQuantity() <= 0) { // 判断库存-数量会不会小于0，如果小于0需要设置
-                updateWrapper1.set(Product::getStatus, 0);
-            }
-            int row = productMapper.update(updateWrapper1);
-            ExceptionUtil.isBadRequest(row <= 0, "该商品已售完或已下架，下次早点支付哦！");
-        });
-
         // 更新订单的条件
-        LambdaUpdateWrapper<Order> updateWrapper2 = new LambdaUpdateWrapper<>();
-        updateWrapper2.set(Order::getStatus, Constants.ORDER_STATUS_PAID)
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(Order::getStatus, Constants.ORDER_STATUS_PAID)
                 .set(Order::getPayTime, now)
                 .set(Order::getPayMethod, payMethod)
                 .set(Order::getUpdateTime, now)
@@ -333,7 +304,7 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
                 .eq(Order::getStatus, Constants.ORDER_STATUS_UNPAID);
 
         // 更新订单信息
-        int row = orderMapper.update(updateWrapper2);
+        int row = orderMapper.update(updateWrapper);
         ExceptionUtil.isBadRequest(row <= 0,"支付失败！");
 
         // 发送支付成功的消息
@@ -348,17 +319,19 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
     public void shipOrder(Long orderId, Long sellerId) {
         Order order = orderMapper.selectById(orderId);
         ExceptionUtil.isNotFound(order == null,"订单不存在！");
-        ExceptionUtil.isForbidden(!order.getSellerId().equals(sellerId), "非常抱歉，您无权对此商品进行发货！");
-        ExceptionUtil.isBadRequest(order.getStatus().equals(Constants.ORDER_STATUS_DELIVERED),"该订单已发货！");
+        ExceptionUtil.isForbidden(!order.getSellerId().equals(sellerId), "非常抱歉，您无权对此订单进行发货！");
+        ExceptionUtil.isBadRequest(order.getStatus().equals(Constants.ORDER_STATUS_DELIVERED),"该订单已发货，不能重复发货！");
 
         //获取当前时间
         LocalDateTime now = LocalDateTime.parse(LocalDateTime.now().format(Constants.FORMATTER), Constants.FORMATTER);
 
+        // 更新对应的订单状态
         LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.set(Order::getStatus, Constants.ORDER_STATUS_DELIVERED)
                 .set(Order::getUpdateTime, now)
                 .eq(Order::getSellerId, sellerId)
-                .eq(Order::getStatus, Constants.ORDER_STATUS_PAID);
+                .eq(Order::getStatus, Constants.ORDER_STATUS_PAID)
+                .eq(Order::getId, orderId);
 
         // 更新发货状态
         int row = orderMapper.update(updateWrapper);
@@ -370,5 +343,128 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
                 order.getBuyerId(),order.getSellerId(),
                 Constants.ORDER_STATUS_DELIVERED);
 
+    }
+
+    @Override
+    public void confirmOrder(Long orderId, Long buyerId) {
+        Order order = orderMapper.selectById(orderId);
+        ExceptionUtil.isNotFound(order == null,"订单不存在！");
+        ExceptionUtil.isForbidden(!order.getBuyerId().equals(buyerId), "非常抱歉，您无权对此订单进行收货！");
+        ExceptionUtil.isBadRequest(order.getStatus().equals(Constants.ORDER_STATUS_FINISHED),"该订单已确认收货，无法重复收货！");
+
+        //获取当前时间
+        LocalDateTime now = LocalDateTime.parse(LocalDateTime.now().format(Constants.FORMATTER), Constants.FORMATTER);
+
+        // 更新对应的订单状态
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(Order::getStatus, Constants.ORDER_STATUS_FINISHED)
+                .set(Order::getUpdateTime, now)
+                .eq(Order::getBuyerId, buyerId)
+                .eq(Order::getStatus, Constants.ORDER_STATUS_DELIVERED)
+                .eq(Order::getId, orderId);
+
+        // 更新已收货状态
+        int row = orderMapper.update(updateWrapper);
+        ExceptionUtil.isBadRequest(row <= 0,"支付失败！");
+
+        // 发送发货成功的消息
+        sendMessageUtil.notifyOrderStatus(
+                Long.valueOf(order.getOrderNo()),
+                order.getBuyerId(),order.getSellerId(),
+                Constants.ORDER_STATUS_FINISHED);
+    }
+
+    @Override
+    public void cancelOrder(Long orderId, Long buyerId) {
+        Order order = orderMapper.selectById(orderId);
+        ExceptionUtil.isNotFound(order == null,"订单不存在！");
+        ExceptionUtil.isForbidden(!order.getBuyerId().equals(buyerId), "非常抱歉，您无权取消此订单！");
+
+        Integer status = order.getStatus();
+        ExceptionUtil.isBadRequest(status.equals(Constants.ORDER_STATUS_CANCELED),"该订单已确认取消，无法重复取消！");
+        boolean flag = status == Constants.ORDER_STATUS_DELIVERED       // 已发货
+                ||  status == Constants.ORDER_STATUS_FINISHED;          // 已收货
+
+        // 如果上面的flag成立，则表示该订单已经发货，无法再取消
+        ExceptionUtil.isBadRequest(flag,"该订单已经发货，无法再取消");
+
+        //获取当前时间
+        LocalDateTime now = LocalDateTime.parse(LocalDateTime.now().format(Constants.FORMATTER), Constants.FORMATTER);
+
+        List<OrderItem> orderItems = orderItemService
+                .list(new LambdaQueryWrapper<OrderItem>()
+                        .select(OrderItem::getProductId, OrderItem::getQuantity)
+                        .eq(OrderItem::getOrderId,orderId));
+
+        // 恢复库存
+        changeStockAndSalesCount(orderItems,now,Constants.ORDER_STATUS_CANCELED);
+
+        // 更新对应的订单状态
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(Order::getStatus, Constants.ORDER_STATUS_CANCELED)
+                .set(Order::getUpdateTime, now)
+                .eq(Order::getBuyerId, buyerId)
+                .eq(Order::getId, orderId);
+
+        // 更新已收货状态
+        int row = orderMapper.update(updateWrapper);
+        ExceptionUtil.isBadRequest(row <= 0,"支付失败！");
+
+        // 发送发货成功的消息
+        sendMessageUtil.notifyOrderStatus(
+                Long.valueOf(order.getOrderNo()),
+                order.getBuyerId(),order.getSellerId(),
+                Constants.ORDER_STATUS_FINISHED);
+    }
+
+    /**
+     * 用来对库存和销量进行改变
+     * @param orderItems 订单id列表
+     * @param now 现在时间
+     * @param status ORDER_STATUS_UNPAID为扣减库存和增加销量，ORDER_STATUS_CANCELED为恢复库存和销量
+     */
+    public void changeStockAndSalesCount(List<OrderItem> orderItems, LocalDateTime now, Integer status) {
+
+        // 获取对应订单详情表的商品id
+        List<Long> productIds = orderItems.stream()
+                .map(OrderItem::getProductId)
+                .toList();
+
+        // 获取订单对应的商品的对应库存
+        Map<Long, Integer> productStockMap = productMapper.selectByIds(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, Product::getStock));
+
+        orderItems.forEach(orderItem -> {
+            Product product = new Product();
+            product.setStock(productStockMap.get(orderItem.getProductId()));
+
+            // 扣减库存和累加销量的条件
+            LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
+
+            updateWrapper.set(Product::getUpdateTime, now)                           // 商品的更新时间
+                    .eq(Product::getId, orderItem.getProductId());
+
+            if (status == Constants.ORDER_STATUS_UNPAID) {  // 扣减库存和增加销量
+                updateWrapper.setDecrBy(Product::getStock, orderItem.getQuantity())  // 库存-数量
+                        .setIncrBy(Product::getSalesCount, orderItem.getQuantity())  // 销量+数量
+                        .eq(Product::getStatus, 1)                               // 检查是否处于可售卖状态
+                        .ge(Product::getStock, orderItem.getQuantity());             // 库存大于购买数量时再减
+
+                if (product.getStock() - orderItem.getQuantity() <= 0) { // 判断库存-数量会不会小于0，如果小于0需要设置状态为已售
+                    updateWrapper.set(Product::getStatus, 2);
+                }
+
+                int row = productMapper.update(updateWrapper);
+                ExceptionUtil.isBadRequest(row <= 0, "该商品已售完或已下架，下次早点下单哦！");
+            }
+            if (status == Constants.ORDER_STATUS_CANCELED) { // 恢复库存和销量
+                updateWrapper.setIncrBy(Product::getStock, orderItem.getQuantity())
+                        .setDecrBy(Product::getSalesCount, orderItem.getQuantity())
+                        .set(Product::getStatus, 1);                                // 因为默认恢复了库存，所以可以直接转换为设置状态为在售
+
+                int row = productMapper.update(updateWrapper);
+                ExceptionUtil.isBadRequest(row <= 0, "恢复库存失败！");
+            }
+        });
     }
 }
