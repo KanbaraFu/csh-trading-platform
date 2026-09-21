@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.secondhand.mapper.UserProfileMapper">
+
+    <!-- 结果映射：数据库字段与User实体绑定 -->
+    <resultMap id="UserProfileMap" type="com.campus.secondhand.pojo.User">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="phone" property="phone"/>
+        <result column="gender" property="gender"/>
+        <result column="college" property="college"/>
+        <result column="student_no" property="studentNo"/>
+        <result column="bio" property="bio"/>
+        <result column="avatar" property="avatar"/>
+        <result column="status" property="status"/>
+        <result column="password" property="password"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 查询个人资料 -->
+    <select id="selectUserProfileById" resultMap="UserProfileMap">
+        SELECT id, username, nickname, phone, gender, college, student_no, bio, avatar, status, password, create_time
+        FROM user
+        WHERE id = #{id}
+    </select>
+
+    <!-- 更新个人资料：动态SQL，只更新传入的字段，不影响密码等 -->
+    <update id="updateUserProfile" parameterType="com.campus.secondhand.pojo.User">
+        UPDATE user
+        <set>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="college != null">college = #{college},</if>
+            <if test="studentNo != null">student_no = #{studentNo},</if>
+            <if test="bio != null">bio = #{bio},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 新增用户 -->
+    <insert id="insertUser" parameterType="com.campus.secondhand.pojo.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (username, college, gender, nickname, bio, phone, avatar, status, password, student_no)
+        VALUES (#{username}, #{college}, #{gender}, #{nickname}, #{bio}, #{phone}, #{avatar}, #{status}, #{password}, #{studentNo})
+    </insert>
+
+    <!-- 删除用户 -->
+    <delete id="deleteUserById">
+        DELETE FROM user WHERE id = #{id}
+    </delete>
+
+</mapper>
