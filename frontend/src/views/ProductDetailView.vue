@@ -85,11 +85,16 @@ function onImageError(event) {
 async function loadComments(page = commentPage.value) {
   commentLoading.value = true
   try {
-    const data = await getComments(product.value.id, { pageNum: page, pageSize: commentPageSize })
+    let targetPage = page
+    let data = await getComments(product.value.id, { pageNum: targetPage, pageSize: commentPageSize })
+    const lastPage = Math.max(1, Math.ceil(data.total / commentPageSize))
+    if (targetPage > lastPage) {
+      targetPage = lastPage
+      data = await getComments(product.value.id, { pageNum: targetPage, pageSize: commentPageSize })
+    }
     comments.value = data.records
     commentTotal.value = data.total
-    const lastPage = Math.max(1, Math.ceil(data.total / commentPageSize))
-    commentPage.value = page > lastPage ? lastPage : page
+    commentPage.value = targetPage
   } finally {
     commentLoading.value = false
   }
@@ -157,7 +162,10 @@ async function submitComment(payload) {
     await createComment({ productId: product.value.id, ...payload })
     ElMessage.success('评论发布成功')
     // 新评论追加在最后一页，回复则停留在当前页
-    await loadComments(payload.parentId ? commentPage.value : 999)
+    const targetPage = payload.parentId
+        ? commentPage.value
+        : Math.max(1, Math.ceil((commentTotal.value + 1) / commentPageSize))
+    await loadComments(targetPage)
   } finally {
     submitting.value = false
   }
