@@ -2,6 +2,8 @@ package com.campus.secondhand.vo;
 
 import lombok.Data;
 
+import java.util.Date;
+
 @Data
 public class UserVO {
     /**
@@ -58,4 +60,9 @@ public class UserVO {
      * 账号状态 0禁用 1正常（前端可据此判断账号是否被封禁）
      */
     private Integer status;
+
+    /**
+     * 注册时间（个人中心展示用；序列化后为 create_time）
+     */
+    private Date createTime;
 }
