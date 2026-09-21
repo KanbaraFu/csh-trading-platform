@@ -11,10 +11,8 @@ import com.campus.secondhand.common.PageResult;
 import com.campus.secondhand.dto.OrderCreateDTO;
 import com.campus.secondhand.dto.OrderPayDTO;
 import com.campus.secondhand.dto.OrderQueryDTO;
-import com.campus.secondhand.pojo.Address;
-import com.campus.secondhand.pojo.Order;
-import com.campus.secondhand.pojo.OrderItem;
-import com.campus.secondhand.pojo.User;
+import com.campus.secondhand.mapper.ProductMapper;
+import com.campus.secondhand.pojo.*;
 import com.campus.secondhand.service.*;
 import com.campus.secondhand.mapper.OrderMapper;
 import com.campus.secondhand.utils.ExceptionUtil;
@@ -61,9 +59,12 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
     @Autowired
     private SendMessageUtil sendMessageUtil;
 
+    @Autowired
+    private ProductMapper productMapper;
+
     @Override
     @Transactional
-    public List<OrderVO> createOrder(OrderCreateDTO orderCreateDTO, Long buyId) {
+    public List<OrderVO> createOrder(OrderCreateDTO orderCreateDTO, Long buyerId) {
         ExceptionUtil.isBadRequest(CollectionUtils.isEmpty(orderCreateDTO.getItems()), "下单商品不能为空！");
 
         List<Order> orders = new ArrayList<>();         // 订单集合
@@ -77,7 +78,7 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         // TODO 获取地址（这里作为临时调用，因为获取的不一定是Address对象，有可能是addressVO对象。需要日后看看是否需要AddressVO，如果没有就自己创建）
         Address address = addressService.getById(orderCreateDTO.getAddressId());
         ExceptionUtil.isBadRequest(address == null, "地址不能为空！");
-        ExceptionUtil.isForbidden(!address.getUserId().equals(buyId), "您无权使用该收货地址！");
+        ExceptionUtil.isForbidden(!address.getUserId().equals(buyerId), "您无权使用该收货地址！");
 
         // 生成地址快照
         String addressSnapshot =
@@ -85,6 +86,9 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
                 address.getPhone() + " " +
                 address.getRegion() + " " +
                 address.getDetail();
+
+        // 获取当前时间
+        LocalDateTime now = LocalDateTime.now();
 
         // 获取卖家列表并去重，因为有可能有的商品可能属于同一卖家
         List<Long> sellerIds = orderDetailVOS.stream()
@@ -105,19 +109,17 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
 
-            // 获取当前时间
-            LocalDateTime now = LocalDateTime.now();
+
             // 生成订单号
-            String orderNo =
+            String orderNo = "" +
                     now.getYear() +
                     now.getMonthValue() +
                     now.getDayOfMonth() +
                     now.getHour() +
-                    now.getMinute() +
                     // 随机数4位
-                    String.valueOf(new Random().nextInt(1000, 10000));
+                    new Random().nextInt(1000, 10000);
             order.setOrderNo(orderNo);                  // 订单号
-            order.setBuyerId(buyId);                   // 买家id（即token中的用户id
+            order.setBuyerId(buyerId);                   // 买家id（即token中的用户id
             order.setSellerId(sellerId);                // 卖家id
             order.setTotalAmount(totalAmount);          // 总金额
             order.setPayAmount(totalAmount);            // 支付金额
@@ -133,9 +135,9 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
         ExceptionUtil.isBadRequest(row1 <= 0, "插入订单列表失败！");
 
 
-        String buyerAvatar = userService.getById(buyId).getAvatar();
+        String buyerAvatar = userService.getById(buyerId).getAvatar();
 
-        // 卖家头像（因为存在多个订单，所以头像会不止一个）
+        // 卖家头像（因为可能存在多个订单，而且都是不同卖家，所以头像会不止一个）
         Map<Long, String> sellerAvatarMap = userService.listByIds(sellerIds).stream()
                 .collect(Collectors.toMap(User::getId,
                         u -> StringUtils.isBlank(u.getAvatar()) ? "" : u.getAvatar()));
@@ -215,7 +217,7 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
                 sendMessageUtil.notifyOrderStatus(
                         Long.valueOf(order.getOrderNo()),
                         order.getBuyerId(),order.getSellerId(),
-                        order.getStatus()));
+                        Constants.ORDER_STATUS_UNPAID));
 
         return orderVOS;
     }
@@ -265,47 +267,108 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
 
     @Override
     @Transactional
-    public void payOrder(OrderPayDTO orderPayDTO, Long orderId, Long buyId) {
+    public void payOrder(OrderPayDTO orderPayDTO, Long orderId, Long buyerId) {
 
-        ExceptionUtil.isBadRequest(orderPayDTO == null || orderPayDTO.getPayMethod() == null,"未选择支付方式！");
-
-        String payMethod = orderPayDTO.getPayMethod();
-
-        boolean isTurePayMethod =
-                payMethod.equals("campus_card")
-                || payMethod.equals("wechat")
-                || payMethod.equals("alipay");
-        ExceptionUtil.isBadRequest(!isTurePayMethod ,"未选择支付方式！");
         Order order = orderMapper.selectById(orderId);
         ExceptionUtil.isNotFound(order == null,"订单不存在！");
+        ExceptionUtil.isForbidden(!order.getBuyerId().equals(buyerId), "非常抱歉，您无权支付该订单！");
+        ExceptionUtil.isBadRequest(order.getStatus().equals(Constants.ORDER_STATUS_PAID),"该订单已支付完成！");
 
+        String payMethod = orderPayDTO.getPayMethod();
+        boolean isTurePayMethod =
+                payMethod.equals("campus_card")
+                        || payMethod.equals("wechat")
+                        || payMethod.equals("alipay");
+        ExceptionUtil.isBadRequest(!isTurePayMethod ,"未选择支付方式！");
+        ExceptionUtil.isBadRequest(orderPayDTO == null || orderPayDTO.getPayMethod() == null || !isTurePayMethod,"未选择支付方式！");
+
+        // TODO 支付防重锁
 
         //获取当前时间
         LocalDateTime now = LocalDateTime.parse(LocalDateTime.now().format(Constants.FORMATTER), Constants.FORMATTER);
 
-        // 已支付状态
-        Integer status = Constants.ORDER_STATUS_PAID;
+        // 扣减库存和累加销量
+        List<OrderItem> orderItems = orderItemService
+                .list(new LambdaQueryWrapper<OrderItem>()
+                        .select(OrderItem::getProductId, OrderItem::getQuantity)
+                        .eq(OrderItem::getOrderId, orderId));
 
-        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.set(Order::getStatus, status)
+        // 获取对应订单详情表的商品id
+        List<Long> productIds = orderItems.stream()
+                .map(OrderItem::getProductId)
+                .toList();
+
+        // 获取订单对应的商品的对应库存
+        Map<Long, Integer> productStockMap = productMapper.selectByIds(productIds).stream()
+                        .collect(Collectors.toMap(Product::getId, Product::getStock));
+
+        orderItems.forEach(orderItem -> {
+            Product product = new Product();
+            product.setStock(productStockMap.get(orderItem.getProductId()));
+            // 扣减库存和累加销量的条件
+            LambdaUpdateWrapper<Product> updateWrapper1 = new LambdaUpdateWrapper<>();
+            updateWrapper1.setDecrBy(Product::getStock, orderItem.getQuantity()) // 库存-数量
+                    .setIncrBy(Product::getSalesCount,  orderItem.getQuantity()) // 销量+数量
+                    .set(Product::getUpdateTime, now)                            // 商品的更新时间
+                    .eq(Product::getSellerId, order.getSellerId())
+                    .eq(Product::getId, orderItem.getProductId())
+                    // 检查库存是否足够
+                    .eq(Product::getStatus, 1)                               // 检查是否处于可售卖状态
+                    .ge(Product::getStock, orderItem.getQuantity());             // 库存大于购买数量时再减
+            if (product.getStock() - orderItem.getQuantity() <= 0) { // 判断库存-数量会不会小于0，如果小于0需要设置
+                updateWrapper1.set(Product::getStatus, 0);
+            }
+            int row = productMapper.update(updateWrapper1);
+            ExceptionUtil.isBadRequest(row <= 0, "该商品已售完或已下架，下次早点支付哦！");
+        });
+
+        // 更新订单的条件
+        LambdaUpdateWrapper<Order> updateWrapper2 = new LambdaUpdateWrapper<>();
+        updateWrapper2.set(Order::getStatus, Constants.ORDER_STATUS_PAID)
                 .set(Order::getPayTime, now)
                 .set(Order::getPayMethod, payMethod)
                 .set(Order::getUpdateTime, now)
                 .eq(Order::getId, orderId)
-                .eq(Order::getBuyerId, buyId)
+                .eq(Order::getBuyerId, buyerId)
                 .eq(Order::getStatus, Constants.ORDER_STATUS_UNPAID);
 
+        // 更新订单信息
+        int row = orderMapper.update(updateWrapper2);
+        ExceptionUtil.isBadRequest(row <= 0,"支付失败！");
 
-        int row = orderMapper.update(updateWrapper);
-        ExceptionUtil.isBadRequest(row <= 0,"支付失败！订单不存在！");
         // 发送支付成功的消息
         sendMessageUtil.notifyOrderStatus(
                 Long.valueOf(order.getOrderNo()),
                 order.getBuyerId(),order.getSellerId(),
-                order.getStatus());
+                Constants.ORDER_STATUS_PAID);
+    }
+
+    @Override
+    @Transactional
+    public void shipOrder(Long orderId, Long sellerId) {
+        Order order = orderMapper.selectById(orderId);
+        ExceptionUtil.isNotFound(order == null,"订单不存在！");
+        ExceptionUtil.isForbidden(!order.getSellerId().equals(sellerId), "非常抱歉，您无权对此商品进行发货！");
+        ExceptionUtil.isBadRequest(order.getStatus().equals(Constants.ORDER_STATUS_DELIVERED),"该订单已发货！");
+
+        //获取当前时间
+        LocalDateTime now = LocalDateTime.parse(LocalDateTime.now().format(Constants.FORMATTER), Constants.FORMATTER);
+
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(Order::getStatus, Constants.ORDER_STATUS_DELIVERED)
+                .set(Order::getUpdateTime, now)
+                .eq(Order::getSellerId, sellerId)
+                .eq(Order::getStatus, Constants.ORDER_STATUS_PAID);
+
+        // 更新发货状态
+        int row = orderMapper.update(updateWrapper);
+        ExceptionUtil.isBadRequest(row <= 0,"支付失败！");
+
+        // 发送发货成功的消息
+        sendMessageUtil.notifyOrderStatus(
+                Long.valueOf(order.getOrderNo()),
+                order.getBuyerId(),order.getSellerId(),
+                Constants.ORDER_STATUS_DELIVERED);
+
     }
 }
-
-
-
-

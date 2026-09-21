@@ -40,5 +40,12 @@ public interface OrderService extends IRepository<Order> {
      * @param orderId 需要支付的订单id
      * @param userId 当前登录的用户id（鉴权,这里也可以理解为买家id）
      */
-    void payOrder( OrderPayDTO orderPayDTO, Long orderId, Long userId);
+    void payOrder(OrderPayDTO orderPayDTO, Long orderId, Long userId);
+
+    /**
+     * 订单发货
+     * @param orderId 需要发货的订单id
+     * @param userId 当前登录的用户id（鉴权，这里也可以理解为卖家id）
+     */
+    void shipOrder(Long orderId, Long userId);
 }

@@ -82,12 +82,14 @@ public class OrderController {
 
     /**
      * 发货（仅已支付）
-     * @param id
+     * @param orderId 需要发货的订单id
      * @return
      */
     @PostMapping("/{id}/ship")
-    public Result shipOrder(@PathVariable Integer id) {
-        return null;
+    public Result<Void> shipOrder(@PathVariable("id") Long orderId) {
+        // TODO 获取Token鉴权，需要等待用户模块的完成
+        orderService.shipOrder(orderId,1L);
+        return Result.success();
     }
 
     /**
