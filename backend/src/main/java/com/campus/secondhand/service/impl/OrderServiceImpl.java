@@ -346,6 +346,7 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
     }
 
     @Override
+    @Transactional
     public void confirmOrder(Long orderId, Long buyerId) {
         Order order = orderMapper.selectById(orderId);
         ExceptionUtil.isNotFound(order == null,"订单不存在！");
@@ -375,6 +376,7 @@ public class OrderServiceImpl extends CrudRepository<OrderMapper, Order>
     }
 
     @Override
+    @Transactional
     public void cancelOrder(Long orderId, Long buyerId) {
         Order order = orderMapper.selectById(orderId);
         ExceptionUtil.isNotFound(order == null,"订单不存在！");
