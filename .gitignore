@@ -42,3 +42,4 @@ application-*.local.yml
 *.md
 # ===== 工具目录 =====
 .codebuddy/
+docs/
