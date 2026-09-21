@@ -24,6 +24,7 @@
         <result property="bizId" column="biz_id" />
         <result property="isRead" column="is_read" />
         <result property="createTime" column="create_time" />
+        <result property="productId" column="product_id" />
         <result property="productCover" column="product_cover" />
         <result property="productTitle" column="product_title" />
     </resultMap>
@@ -63,9 +64,9 @@
     <!--    分页条件查询消息-->
     <select id="selectMessages" resultMap="MessageVoResultMap">
         SELECT m.id, m.type, m.title, m.content, m.biz_id, m.is_read, m.create_time,
-        p.cover AS product_cover, p.title AS product_title
+        p.id AS product_id, p.cover AS product_cover, p.title AS product_title
         FROM message m
-        LEFT JOIN product p ON m.biz_id = p.id AND m.type IN ('comment', 'trade')
+        LEFT JOIN product p ON m.biz_id = p.id AND m.type = 'comment'
         WHERE m.user_id = #{userId}
         <if test="type != null and type != ''">
             AND m.type = #{type}

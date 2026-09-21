@@ -44,6 +44,10 @@ public class MessageServiceImpl extends CrudRepository<MessageMapper, Message>
         Long pageNum=queryDto.getPageNum();
         Long pageSize=queryDto.getPageSize();
         String type=queryDto.getType();
+        //补充： 前端"全部"传type=all，转为 null 表示不按类型筛选
+        if ("all".equals(type)) {
+            type = null;
+        }
         //2.根据用户id与查询类型查询消息的总数量
         Long total = messageMapper.countMessages(userId, type);
         //4.查询各类消息的数量
