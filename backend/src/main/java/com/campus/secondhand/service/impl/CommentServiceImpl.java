@@ -171,7 +171,8 @@ public class CommentServiceImpl extends CrudRepository<CommentMapper, Comment>
         int row2=commentMapper.deleteById(commentId);
         ExceptionUtil.isTrue(row2!=1,"删除主评论错误");
     }
-    //递归查询所有子评论
+
+    //递归查询所有子评论（给分页查询评论调用的方法）
     /**
      * 递归查询所有子评论id
      * @param id 父评论id

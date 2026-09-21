@@ -57,7 +57,7 @@ public class MessageController {
     }
 
     /**
-     * 更新所有评论为已读
+     * 更新所有信息为已读
      * @param body
      * @param token
      * @return

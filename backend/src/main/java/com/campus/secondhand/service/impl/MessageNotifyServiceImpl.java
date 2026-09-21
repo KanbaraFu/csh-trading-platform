@@ -1,4 +1,3 @@
-// 文件路径: E:\csh-trading-platform-check\backend\src\main\java\com\campus\secondhand\service\impl\MessageNotifyServiceImpl.java
 package com.campus.secondhand.service.impl;
 
 import com.campus.secondhand.common.Constants;
@@ -12,13 +11,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
- * （评论与订单创建时）发送消息的实现
+ * 消息通知服务实现
  */
 @Service
 public class MessageNotifyServiceImpl implements MessageNotifyService {
 
     private static final Logger log = LoggerFactory.getLogger(MessageNotifyServiceImpl.class);
+
+    private static final String TYPE_COMMENT = "comment";
+    private static final String TYPE_TRADE = "trade";
+    private static final String TYPE_SYSTEM = "system";
 
     @Autowired
     private MessageService messageServiceImpl;
@@ -35,19 +40,17 @@ public class MessageNotifyServiceImpl implements MessageNotifyService {
             Long sellerId = product.getSellerId();
             String productTitle = product.getTitle();
 
-            // 1. 通知商品卖家（评论者不是卖家本人）
             if (!senderId.equals(sellerId)) {
-                sendMessage(sellerId, "comment",
+                sendMessage(sellerId, TYPE_COMMENT,
                         "商品被评论",
                         "有人对你的商品「" + productTitle + "」发表了评论",
                         productId);
             }
 
-            // 2. 回复场景：通知被回复者（被回复者不是评论者本人，也不是卖家——卖家上面已通知）
             if (replyToId != null
                     && !replyToId.equals(senderId)
                     && !replyToId.equals(sellerId)) {
-                sendMessage(replyToId, "comment",
+                sendMessage(replyToId, TYPE_COMMENT,
                         "评论被回复",
                         "你在商品「" + productTitle + "」下的评论收到了新回复",
                         productId);
@@ -60,36 +63,39 @@ public class MessageNotifyServiceImpl implements MessageNotifyService {
     @Override
     public void notifyOrderStatus(Long orderId, Long buyerId, Long sellerId, int orderStatus) {
         try {
-            String title;
-            String content;
-            String type = "trade";
-
             switch (orderStatus) {
+                case Constants.ORDER_STATUS_UNPAID:
+                    sendMessage(buyerId, TYPE_TRADE, "订单待支付",
+                            "你的订单已创建，请尽快完成支付", orderId);
+                    sendMessage(sellerId, TYPE_TRADE, "收到新订单",
+                            "有人对你的商品下了订单，等待买家付款", orderId);
+                    break;
+
                 case Constants.ORDER_STATUS_PAID:
-                    title = "订单已支付";
-                    content = "你的订单已完成支付，请等待卖家发货";
-                    sendMessage(buyerId, type, title, content, orderId);
+                    sendMessage(buyerId, TYPE_TRADE, "订单已支付",
+                            "你的订单已完成支付，请等待卖家发货", orderId);
+                    sendMessage(sellerId, TYPE_TRADE, "订单已支付",
+                            "你的商品已被购买，请及时发货", orderId);
                     break;
 
                 case Constants.ORDER_STATUS_DELIVERED:
-                    title = "订单已发货";
-                    content = "你的订单已发货，请注意查收";
-                    sendMessage(buyerId, type, title, content, orderId);
+                    sendMessage(buyerId, TYPE_TRADE, "订单已发货",
+                            "你的订单已发货，请注意查收", orderId);
+                    sendMessage(sellerId, TYPE_TRADE, "订单已发货",
+                            "你的订单已发货，请等待买家确认收货", orderId);
                     break;
 
                 case Constants.ORDER_STATUS_FINISHED:
-                    title = "交易已完成";
-                    content = "订单已确认完成，感谢你的使用";
-                    sendMessage(buyerId, type, title, content, orderId);
-                    sendMessage(sellerId, type, "订单交易完成",
+                    sendMessage(buyerId, TYPE_TRADE, "交易已完成",
+                            "订单已确认完成，感谢你的使用", orderId);
+                    sendMessage(sellerId, TYPE_TRADE, "交易已完成",
                             "你的商品已售出并完成交易", orderId);
                     break;
 
                 case Constants.ORDER_STATUS_CANCELED:
-                    title = "订单已取消";
-                    content = "订单已取消，商品已恢复上架";
-                    sendMessage(buyerId, type, title, content, orderId);
-                    sendMessage(sellerId, type, "订单已取消",
+                    sendMessage(buyerId, TYPE_TRADE, "订单已取消",
+                            "订单已取消，商品已恢复上架", orderId);
+                    sendMessage(sellerId, TYPE_TRADE, "订单已取消",
                             "买家已取消订单，商品已恢复上架", orderId);
                     break;
 
@@ -101,7 +107,37 @@ public class MessageNotifyServiceImpl implements MessageNotifyService {
         }
     }
 
+    @Override
+    public void notifyOrderTimeout(Long orderId, Long buyerId, Long sellerId) {
+        try {
+            sendMessage(buyerId, TYPE_TRADE, "订单已超时",
+                    "你的订单因未及时支付已自动取消", orderId);
+            sendMessage(sellerId, TYPE_TRADE, "订单已超时",
+                    "买家的订单因未支付已自动取消，商品已恢复上架", orderId);
+        } catch (Exception e) {
+            log.warn("发送订单超时通知失败，不影响主流程：{}", e.getMessage());
+        }
+    }
+
+    @Override
+    public void notifySystem(Long userId, String title, String content) {
+        try {
+            sendMessage(userId, TYPE_SYSTEM, title, content, null);
+        } catch (Exception e) {
+            log.warn("发送系统通知失败，不影响主流程：{}", e.getMessage());
+        }
+    }
+
+    @Override
+    public void notifySystemBatch(List<Long> userIds, String title, String content) {
+        if (userIds == null || userIds.isEmpty()) return;
+        for (Long userId : userIds) {
+            notifySystem(userId, title, content);
+        }
+    }
+
     private void sendMessage(Long userId, String type, String title, String content, Long bizId) {
+        if (userId == null) return;
         CreateMessageDto dto = new CreateMessageDto();
         dto.setUserId(userId);
         dto.setType(type);
