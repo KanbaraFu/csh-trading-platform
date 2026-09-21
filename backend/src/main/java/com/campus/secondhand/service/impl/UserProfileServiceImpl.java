@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Service
@@ -50,8 +51,8 @@ public class UserProfileServiceImpl implements UserProfileService {
             user.setNickname("用户" + createDTO.getUsername());
         }
         user.setStatus(1);
-        user.setCreateTime(new Date());
-        user.setUpdateTime(new Date());
+        user.setCreateTime(LocalDateTime.now());
+        user.setUpdateTime(LocalDateTime.now());
 
         try {
             userProfileMapper.insertUser(user);

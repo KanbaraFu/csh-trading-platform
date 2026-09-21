@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +94,7 @@ public class UserServiceImpl extends CrudRepository<UserMapper, User>
         // 4、提供前端所需参数
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
-        loginVO.setUser(userVO);
+        loginVO.setUserVO(userVO);
         return loginVO;
     }
 
@@ -143,8 +144,8 @@ public class UserServiceImpl extends CrudRepository<UserMapper, User>
                 ? registerDTO.getNickname()
                 : "用户" + phone.substring(phone.length() - 4));
         user.setStatus(1);
-        user.setCreateTime(new Date());
-        user.setUpdateTime(new Date());
+        user.setCreateTime(LocalDateTime.now());
+        user.setUpdateTime(LocalDateTime.now());
 
         int rows = userMapper.insert(user);
         log.info("注册写入 user 表，影响行数={}, userId={}", rows, user.getId());

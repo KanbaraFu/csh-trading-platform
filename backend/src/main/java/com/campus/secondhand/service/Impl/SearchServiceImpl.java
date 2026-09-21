@@ -1,4 +1,4 @@
-package com.campus.secondhand.service.Impl;
+package com.campus.secondhand.service.impl;
 
 import com.campus.secondhand.common.Constants;
 import com.campus.secondhand.dto.SearchDTO;

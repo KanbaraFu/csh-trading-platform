@@ -10,6 +10,7 @@ import com.campus.secondhand.pojo.Order;
 import com.campus.secondhand.pojo.OrderItem;
 import com.campus.secondhand.service.OrderItemService;
 import com.campus.secondhand.service.OrderService;
+import com.campus.secondhand.utils.TokenUtil;
 import com.campus.secondhand.vo.OrderItemVO;
 import com.campus.secondhand.vo.OrderVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,15 +34,23 @@ public class OrderController {
     @Autowired
     private OrderItemService orderItemService;
 
+    @Autowired
+    private TokenUtil tokenUtil;
+
     /**
      * 创建订单
      * @return 返回创建的结果
      */
     @PostMapping
-    public Result<List<OrderVO>> createOrder(@RequestBody OrderCreateDTO orderCreateDTO) {
-        // TODO 获取Token鉴权，需要等待用户模块的完成
-        List<OrderVO> newOrders = orderService.createOrder(orderCreateDTO, 1L);
-        return Result.success(newOrders);
+    public Result<List<OrderVO>> createOrder(@RequestBody OrderCreateDTO orderCreateDTO,
+                                             @SessionAttribute(value = "token", required = false) String token) {
+        if (tokenUtil.validate(token)) {
+            Long userId = tokenUtil.getUserId(token);
+            List<OrderVO> newOrders = orderService.createOrder(orderCreateDTO, 1L);
+            return Result.success(newOrders);
+        } else {
+            return Result.error("请先登录！");
+        }
     }
 
     /**
@@ -49,10 +58,15 @@ public class OrderController {
      * @return 返回订单列表
      */
     @GetMapping
-    public Result<PageResult<OrderVO>> getOrders(@ModelAttribute OrderQueryDTO orderQueryDTO) {
-        // TODO 获取Token鉴权，需要等待用户模块的完成
-        PageResult<OrderVO> orders =  orderService.getOrders(orderQueryDTO,1L);
-        return Result.success(orders);
+    public Result<PageResult<OrderVO>> getOrders(@ModelAttribute OrderQueryDTO orderQueryDTO,
+                                                 @SessionAttribute(value = "token", required = false) String token) {
+        if (tokenUtil.validate(token)) {
+            Long userId = tokenUtil.getUserId(token);
+            PageResult<OrderVO> orders =  orderService.getOrders(orderQueryDTO,userId);
+            return Result.success(orders);
+        } else {
+            return Result.error("请先登录！");
+        }
     }
 
     /**
@@ -61,10 +75,15 @@ public class OrderController {
      * @return 返回对应的订单详情
      */
     @GetMapping("/{id}")
-    public Result<OrderVO> getOrderDetail(@PathVariable("id") Long orderId) {
-        // TODO 获取Token鉴权，需要等待用户模块的完成
-        OrderVO orderVO = orderItemService.getOrderDetail(orderId, 1L);
-        return Result.success(orderVO);
+    public Result<OrderVO> getOrderDetail(@PathVariable("id") Long orderId,
+                                          @SessionAttribute(value = "token", required = false) String token) {
+        if (tokenUtil.validate(token)) {
+            Long userId = tokenUtil.getUserId(token);
+            OrderVO orderVO = orderItemService.getOrderDetail(orderId, userId);
+            return Result.success(orderVO);
+        } else {
+            return Result.error("请先登录！");
+        }
     }
 
     /**
@@ -74,10 +93,15 @@ public class OrderController {
      * @return 返回Result结果
      */
     @PostMapping("/{id}/pay")
-    public Result<Void> payOrder(@RequestBody OrderPayDTO orderPayDTO, @PathVariable("id") Long orderId) {
-        // TODO 获取Token鉴权，需要等待用户模块的完成
-        orderService.payOrder(orderPayDTO,orderId,1L);
-        return Result.success();
+    public Result<Void> payOrder(@RequestBody OrderPayDTO orderPayDTO, @PathVariable("id") Long orderId,
+                                 @SessionAttribute(value = "token", required = false) String token) {
+        if (tokenUtil.validate(token)) {
+            Long userId = tokenUtil.getUserId(token);
+            orderService.payOrder(orderPayDTO,orderId,userId);
+            return Result.success();
+        } else {
+            return Result.error("请先登录！");
+        }
     }
 
     /**
@@ -86,29 +110,50 @@ public class OrderController {
      * @return 返回Result结果
      */
     @PostMapping("/{id}/ship")
-    public Result<Void> shipOrder(@PathVariable("id") Long orderId) {
-        // TODO 获取Token鉴权，需要等待用户模块的完成
-        orderService.shipOrder(orderId,1L);
-        return Result.success();
+    public Result<Void> shipOrder(@PathVariable("id") Long orderId,
+                                  @SessionAttribute(value = "token", required = false) String token) {
+        if (tokenUtil.validate(token)) {
+            Long userId = tokenUtil.getUserId(token);
+            orderService.shipOrder(orderId,userId);
+            return Result.success();
+        } else {
+            return Result.error("请先登录！");
+        }
+
     }
 
     /**
      * 确认收货
-     * @param id
-     * @return
+     * @param orderId 需要确认收货的订单id
+     * @return 返回Result结果
      */
     @PostMapping("/{id}/confirm")
-    public Result<Void> confirmOrder(@PathVariable("id") Integer id) {
-        return Result.success();
+    public Result<Void> confirmOrder(@PathVariable("id") Long orderId,
+                                     @SessionAttribute(value = "token", required = false) String token) {
+        if (tokenUtil.validate(token)) {
+            Long userId = tokenUtil.getUserId(token);
+            orderService.confirmOrder(orderId,userId);
+            return Result.success();
+        } else {
+            return Result.error("请先登录！");
+        }
+
     }
 
     /**
      * 取消收货
-     * @param id
-     * @return
+     * @param orderId 需要取消收货的订单id
+     * @return 返回Result结果
      */
     @PostMapping("/{id}/cancel")
-    public Result<Void> cancelOrder(@PathVariable("id") Integer id) {
-        return Result.success();
+    public Result<Void> cancelOrder(@PathVariable("id") Long orderId,
+                                    @SessionAttribute(value = "token", required = false) String token) {
+        if (tokenUtil.validate(token)) {
+            Long userId = tokenUtil.getUserId(token);
+            orderService.cancelOrder(orderId,userId);
+            return Result.success();
+        } else {
+            return Result.error("请先登录！");
+        }
     }
 }

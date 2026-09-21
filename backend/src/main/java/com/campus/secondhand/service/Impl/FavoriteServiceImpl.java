@@ -1,4 +1,4 @@
-package com.campus.secondhand.service.Impl;
+package com.campus.secondhand.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campus.secondhand.common.BizException;

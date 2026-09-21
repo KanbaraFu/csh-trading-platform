@@ -80,7 +80,7 @@ public class TokenUtil {
     }
 
     /**
-     * 校验并续期，返回 userId。拦截器里推荐直接用这个，一步到位。
+     * 校验并续期，返回 userId。
      *
      * @return 无效返回 null
      */

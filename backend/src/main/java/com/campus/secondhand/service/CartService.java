@@ -1,16 +1,18 @@
 package com.campus.secondhand.service;
 
+import com.baomidou.mybatisplus.extension.repository.IRepository;
 import com.campus.secondhand.dto.CartAddDTO;
 import com.campus.secondhand.dto.CartSelectAllDTO;
 import com.campus.secondhand.dto.CartUpdateDTO;
 import com.campus.secondhand.pojo.Cart;
+import com.campus.secondhand.pojo.Order;
 import com.campus.secondhand.vo.CartItemVO;
 import com.campus.secondhand.vo.CartPreviewVO;
 import com.campus.secondhand.vo.CartVO;
 
 import java.util.List;
 
-public interface CartService {
+public interface CartService extends IRepository<Cart> {
 
     /**
      * 加入购物车

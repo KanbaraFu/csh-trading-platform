@@ -1,7 +1,8 @@
-package com.campus.secondhand.service.Impl;
+package com.campus.secondhand.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.spring.repository.CrudRepository;
 import com.campus.secondhand.common.BizException;
 import com.campus.secondhand.common.Constants;
 import com.campus.secondhand.dto.CartAddDTO;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class CartServiceImpl implements CartService {
+public class CartServiceImpl extends CrudRepository<CartMapper, Cart> implements CartService {
     private final CartMapper cartMapper;
     private final ProductMapper productMapper; //检验商品是否存在
     private final ProductDecorator productDecorator;//装饰器,将product包装成前端需要的productVO
