@@ -22,14 +22,12 @@ public class FavoriteController {
         this.tokenUtil = tokenUtil;
     }
     private Long currentUserId(String token){
-/*        //接口
+
         Long userId = tokenUtil.getUserIdAndRefresh(token);
         if(userId==null){
             throw BizException.unauthorized("登录已失效,请重新登录");
         }
-        return userId;*/
-        //测试固定为用户固定为1
-        return 1L;
+        return userId;
     }
 
     /**

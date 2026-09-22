@@ -1,5 +1,6 @@
 package com.campus.secondhand.controller;
 
+import com.campus.secondhand.common.BizException;
 import com.campus.secondhand.common.Constants;
 import com.campus.secondhand.common.Result;
 import com.campus.secondhand.dto.CartAddDTO;
@@ -28,14 +29,11 @@ public class CartController {
     }
     //测试,登录拦截器未使用,固定返会1L
     private Long currentUserId(String token) {
-        /*
         Long userId = tokenUtil.getUserIdAndRefresh(token);
         if (userId == null) {
             throw BizException.unauthorized("登录已失效，请重新登录");
         }
         return userId;
-        */
-        return 1L;
     }
     /**
      * 加入购物车
