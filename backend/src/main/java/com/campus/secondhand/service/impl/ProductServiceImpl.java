@@ -19,6 +19,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,7 +33,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public IPage<ProductVO> getProductPage(ProductQueryDTO queryDTO) {
         Page<ProductVO> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
-        IPage<ProductVO> result = productMapper.selectProductPage(
+        return productMapper.selectProductPage(
                 page,
                 queryDTO.getCategoryId(),
                 queryDTO.getKeyword(),
@@ -40,17 +41,9 @@ public class ProductServiceImpl implements ProductService {
                 queryDTO.getMinPrice(),
                 queryDTO.getMaxPrice(),
                 queryDTO.getStatus(),
-                queryDTO.getSellerId()
+                queryDTO.getSellerId(),
+                queryDTO.getSort()
         );
-        // 列表接口必须带上“是否可购买”，前端商品卡片据此判断是否置灰；
-        // 该字段缺失会让前端把所有商品误判为已售出。
-        result.getRecords().forEach(vo -> vo.setIsAvailable(isAvailable(vo.getStatus(), vo.getStock())));
-        return result;
-    }
-
-    private boolean isAvailable(Integer status, Integer stock) {
-        return status != null && status == Constants.PRODUCT_STATUS_ON
-                && stock != null && stock > 0;
     }
 
     @Override
@@ -60,18 +53,19 @@ public class ProductServiceImpl implements ProductService {
             throw BizException.notFound("商品不存在");
         }
 
-        // 查询图片列表
+        // 查询图片列表，为空时回退到封面（前端轮播依赖非空数组）
         List<ProductImage> images = productImageMapper.selectList(
                 new LambdaQueryWrapper<ProductImage>()
                         .eq(ProductImage::getProductId, id)
                         .orderByAsc(ProductImage::getSort)
         );
-        detailVO.setImages(images.stream()
+        List<String> urls = images.stream()
                 .map(ProductImage::getUrl)
-                .collect(Collectors.toList()));
-
-        // 详情页据此决定展示「立即购买」还是「已售出」，必须显式返回
-        detailVO.setIsAvailable(isAvailable(detailVO.getStatus(), detailVO.getStock()));
+                .collect(Collectors.toList());
+        if (urls.isEmpty() && detailVO.getCover() != null) {
+            urls = new ArrayList<>(List.of(detailVO.getCover()));
+        }
+        detailVO.setImages(urls);
 
         return detailVO;
     }
@@ -85,6 +79,14 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(Constants.PRODUCT_STATUS_ON);
         product.setViewCount(0);
         product.setSalesCount(0);
+
+        // 未传库存时默认 1，未传封面时用第一张图兜底
+        if (product.getStock() == null) {
+            product.setStock(1);
+        }
+        if (product.getCover() == null && saveDTO.getImages() != null && !saveDTO.getImages().isEmpty()) {
+            product.setCover(saveDTO.getImages().get(0));
+        }
         productMapper.insert(product);
 
         saveImages(product.getId(), saveDTO.getImages());
@@ -104,6 +106,9 @@ public class ProductServiceImpl implements ProductService {
 
         BeanUtils.copyProperties(saveDTO, product);
         product.setId(productId);
+        if (product.getCover() == null && saveDTO.getImages() != null && !saveDTO.getImages().isEmpty()) {
+            product.setCover(saveDTO.getImages().get(0));
+        }
         productMapper.updateById(product);
 
         // 先删后增图片
@@ -137,20 +142,15 @@ public class ProductServiceImpl implements ProductService {
         if (!product.getSellerId().equals(userId)) {
             throw BizException.forbidden("无权删除他人商品");
         }
-        productMapper.deleteById(productId);
-        productImageMapper.delete(
-                new LambdaQueryWrapper<ProductImage>()
-                        .eq(ProductImage::getProductId, productId)
-        );
+        // 软下架：保留记录与图片，便于「重新上架」
+        product.setStatus(Constants.PRODUCT_STATUS_OFF);
+        productMapper.updateById(product);
     }
 
     @Override
     public void incrViewCount(Long productId) {
-        Product product = productMapper.selectById(productId);
-        if (product != null) {
-            product.setViewCount(product.getViewCount() + 1);
-            productMapper.updateById(product);
-        }
+        // 原子自增，避免并发下计数被覆盖
+        productMapper.updateRecordView(productId);
     }
 
     private void saveImages(Long productId, List<String> imageUrls) {

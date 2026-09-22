@@ -23,6 +23,30 @@
         <result property="updateTime" column="update_time" />
     </resultMap>
 
+    <!-- 列表 VO：列名 -> VO 属性（seller_nickname 与前端 format.js 的兼容命名保持一致） -->
+    <resultMap id="productVOMap" type="com.campus.secondhand.vo.ProductVO">
+        <id property="id" column="id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="title" column="title"/>
+        <result property="price" column="price"/>
+        <result property="originalPrice" column="original_price"/>
+        <result property="stock" column="stock"/>
+        <result property="condition" column="condition"/>
+        <result property="status" column="status"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="salesCount" column="sales_count"/>
+        <result property="cover" column="cover"/>
+        <result property="location" column="location"/>
+        <result property="createTime" column="create_time"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="sellerNickname" column="seller_nickname"/>
+        <result property="sellerAvatar" column="seller_avatar"/>
+        <result property="sellerCollege" column="seller_college"/>
+        <result property="isAvailable" column="is_available"/>
+    </resultMap>
+
+    <!-- 详情 VO -->
     <resultMap id="productDetailVOMap" type="com.campus.secondhand.vo.ProductDetailVO">
         <id property="id" column="id"/>
         <result property="sellerId" column="seller_id"/>
@@ -40,27 +64,10 @@
         <result property="location" column="location"/>
         <result property="createTime" column="create_time"/>
         <result property="categoryName" column="category_name"/>
-        <result property="sellerName" column="seller_name"/>
+        <result property="sellerNickname" column="seller_nickname"/>
         <result property="sellerAvatar" column="seller_avatar"/>
-    </resultMap>
-
-    <resultMap id="productVOMap" type="com.campus.secondhand.vo.ProductVO">
-        <id property="id" column="id"/>
-        <result property="sellerId" column="seller_id"/>
-        <result property="categoryId" column="category_id"/>
-        <result property="title" column="title"/>
-        <result property="price" column="price"/>
-        <result property="originalPrice" column="original_price"/>
-        <result property="stock" column="stock"/>
-        <result property="condition" column="condition"/>
-        <result property="status" column="status"/>
-        <result property="viewCount" column="view_count"/>
-        <result property="cover" column="cover"/>
-        <result property="location" column="location"/>
-        <result property="createTime" column="create_time"/>
-        <result property="categoryName" column="category_name"/>
-        <result property="sellerName" column="seller_name"/>
-        <result property="sellerAvatar" column="seller_avatar"/>
+        <result property="sellerCollege" column="seller_college"/>
+        <result property="isAvailable" column="is_available"/>
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -69,22 +76,22 @@
         sales_count,`condition`,location,create_time,update_time
     </sql>
 
-    <!-- 关键词 + 价格 通用过滤条件（status 排除下架） -->
+    <!-- 关键词 + 分类 + 价格 通用过滤条件（排除下架） -->
     <sql id="Keyword_Filter">
         <where>
             status != 0
             <if test="keyword != null and keyword != ''">
-                and (title like concat('%', #{keyword}, '%')
-                or description like concat('%', #{keyword}, '%'))
+                AND (title LIKE concat('%', #{keyword}, '%')
+                OR description LIKE concat('%', #{keyword}, '%'))
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
             </if>
             <if test="minPrice != null">
-                and price &gt;= #{minPrice}
+                AND price &gt;= #{minPrice}
             </if>
             <if test="maxPrice != null">
-                and price &lt;= #{maxPrice}
-            </if>
-            <if test="categoryId != null and categoryId != 0">
-                AND category_id = #{categoryId}
+                AND price &lt;= #{maxPrice}
             </if>
         </where>
     </sql>
@@ -105,17 +112,9 @@
 
     <update id="updateRecordView">
         update product
-        set view_count=view_count+1
-        where
-        id=#{productId}
+        set view_count = view_count + 1
+        where id = #{productId}
     </update>
-
-    <select id="selectById" resultType="com.campus.secondhand.pojo.Product">
-        select <include refid="Base_Column_List"/>
-        from product
-        where
-        id=#{productId}
-    </select>
 
     <select id="countByKeyword" resultType="java.lang.Long">
         SELECT COUNT(*) FROM product
@@ -123,33 +122,28 @@
     </select>
 
     <select id="selectByKeyword" resultType="com.campus.secondhand.pojo.Product">
-        select <include refid="Base_Column_List"/>
-        from product
+        SELECT <include refid="Base_Column_List"/> FROM product
         <include refid="Keyword_Filter"/>
         <choose>
-            <when test="sort == 'hot'">
-                order by (view_count + sales_count * 10) desc
-            </when>
-            <when test="sort == 'price_asc'">
-                order by price asc
-            </when>
-            <when test="sort == 'price_desc'">
-                order by price desc
-            </when>
-            <otherwise>
-                order by create_time desc
-            </otherwise>
+            <when test="sort == 'hot'">ORDER BY (view_count + sales_count * 10) DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY price ASC</when>
+            <when test="sort == 'price_desc'">ORDER BY price DESC</when>
+            <otherwise>ORDER BY create_time DESC</otherwise>
         </choose>
         LIMIT #{offset}, #{pageSize}
     </select>
 
+    <!-- 列表：联查分类 + 卖家，支持排序，不传 status 时默认只看在售 -->
     <select id="selectProductPage" resultMap="productVOMap">
         SELECT
-        p.id, p.seller_id, p.category_id, p.title, p.price, p.original_price,
-        p.stock, p.`condition`, p.status, p.view_count, p.cover, p.location, p.create_time,
-        c.name AS category_name,
-        u.nickname AS seller_name,
-        u.avatar AS seller_avatar
+            p.id, p.seller_id, p.category_id, p.title, p.price, p.original_price,
+            p.stock, p.`condition`, p.status, p.view_count, p.sales_count,
+            p.cover, p.location, p.create_time,
+            c.name AS category_name,
+            u.nickname AS seller_nickname,
+            u.avatar AS seller_avatar,
+            u.college AS seller_college,
+            (p.status = 1 AND p.stock > 0) AS is_available
         FROM product p
         LEFT JOIN category c ON p.category_id = c.id
         LEFT JOIN user u ON p.seller_id = u.id
@@ -158,7 +152,8 @@
                 AND p.category_id = #{categoryId}
             </if>
             <if test="keyword != null and keyword != ''">
-                AND p.title LIKE CONCAT('%', #{keyword}, '%')
+                AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+                     OR p.description LIKE CONCAT('%', #{keyword}, '%'))
             </if>
             <if test="condition != null and condition != ''">
                 AND p.`condition` = #{condition}
@@ -169,27 +164,42 @@
             <if test="maxPrice != null">
                 AND p.price &lt;= #{maxPrice}
             </if>
-            <if test="status != null">
-                AND p.status = #{status}
-            </if>
+            <choose>
+                <!-- 显式传了 status 就按传入值过滤（卖家中心查全部/下架） -->
+                <when test="status != null">
+                    AND p.status = #{status}
+                </when>
+                <!-- 不传时默认只看在售，避免下架商品出现在首页 -->
+                <otherwise>
+                    AND p.status = 1
+                </otherwise>
+            </choose>
             <if test="sellerId != null">
                 AND p.seller_id = #{sellerId}
             </if>
         </where>
-        ORDER BY p.create_time DESC
+        <choose>
+            <when test="sort == 'hot'">ORDER BY (p.view_count + p.sales_count * 10) DESC, p.create_time DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY p.price ASC, p.create_time DESC</when>
+            <when test="sort == 'price_desc'">ORDER BY p.price DESC, p.create_time DESC</when>
+            <otherwise>ORDER BY p.create_time DESC</otherwise>
+        </choose>
     </select>
 
+    <!-- 详情：联查分类 + 卖家 -->
     <select id="selectProductDetail" resultMap="productDetailVOMap">
         SELECT
             p.id, p.seller_id, p.category_id, p.title, p.description, p.price, p.original_price,
             p.stock, p.`condition`, p.status, p.view_count, p.sales_count,
             p.cover, p.location, p.create_time,
             c.name AS category_name,
-            u.nickname AS seller_name,
-            u.avatar AS seller_avatar
+            u.nickname AS seller_nickname,
+            u.avatar AS seller_avatar,
+            u.college AS seller_college,
+            (p.status = 1 AND p.stock > 0) AS is_available
         FROM product p
-                 LEFT JOIN category c ON p.category_id = c.id
-                 LEFT JOIN user u ON p.seller_id = u.id
+        LEFT JOIN category c ON p.category_id = c.id
+        LEFT JOIN user u ON p.seller_id = u.id
         WHERE p.id = #{id}
     </select>
 
